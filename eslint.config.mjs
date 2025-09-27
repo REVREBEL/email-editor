@@ -1,31 +1,21 @@
-// eslint.config.mjs  (ESM)
-import js from '@eslint/js';
-import vue from 'eslint-plugin-vue';
-import tsPlugin from '@typescript-eslint/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
-import vueParser from 'vue-eslint-parser';
-import globals from 'globals';
+// eslint.config.js  (ESM since package.json has "type":"module")
+import js from '@eslint/js'
+import vue from 'eslint-plugin-vue'
+import ts from '@typescript-eslint/eslint-plugin'
+import tsParser from '@typescript-eslint/parser'
+import vueParser from 'vue-eslint-parser'
 
-const isProd = process.env.NODE_ENV === 'production';
+const isProd = process.env.NODE_ENV === 'production'
+
+// Vue 3 "essential" ruleset (like 'plugin:vue/vue3-essential')
+const vue3Essential = vue.configs['vue3-essential']?.rules ?? {}
 
 export default [
-  // ignore patterns
-  { ignores: ['dist', 'node_modules', '.nuxt', '.output', '**/*.d.ts', 'embed.js'] },
+  // Ignore stuff
+  { ignores: ['dist', 'node_modules', '.nuxt', '.output'] },
 
-  // Base JS rules
+  // Base JS ('eslint:recommended')
   js.configs.recommended,
-
-  // Optionally include Vue flat preset (pick one, or skip both and keep your hand-picked rules)
-  // vue.configs['flat/essential'],
-  // vue.configs['flat/recommended'],
-
-  // Config files (.js, .mjs) — Node globals
-  {
-    files: ['**/*.{js,mjs}'],
-    languageOptions: {
-      globals: { ...globals.node },
-    },
-  },
 
   // Vue SFCs
   {
@@ -33,69 +23,33 @@ export default [
     languageOptions: {
       parser: vueParser,
       parserOptions: {
-        // Use TS parser for <script lang="ts">
-        parser: tsParser,
+        parser: tsParser,            // for <script lang="ts">
         ecmaVersion: 'latest',
         sourceType: 'module',
         extraFileExtensions: ['.vue'],
       },
-      globals: {
-        ...globals.browser,
-        unlayer: 'readonly',
-      },
     },
-    plugins: {
-      vue,
-      '@typescript-eslint': tsPlugin, // 🔧 correct binding (no tseslint)
-    },
+    plugins: { vue, '@typescript-eslint': ts },
     rules: {
-      // Approximate Vue "essential" (remove if you enable vue flat preset above)
-      'vue/no-mutating-props': 'error',
-      'vue/no-unused-vars': 'warn',
-      'vue/no-dupe-keys': 'error',
-      'vue/no-parsing-error': 'error',
-      'vue/no-reserved-keys': 'error',
-      'vue/no-setup-props-destructure': 'warn',
-      'vue/no-side-effects-in-computed-properties': 'error',
-      'vue/no-use-v-if-with-v-for': 'error',
-      'vue/valid-template-root': 'error',
-      // In the **Vue SFC** block (files: ['**/*.vue'])
-      'no-unused-vars': 'off', // ⬅️ turn off base rule for .vue
-      '@typescript-eslint/no-unused-vars': ['warn', {
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-        caughtErrorsIgnorePattern: '^_',
-        ignoreRestSiblings: true,
-      }],
-      // env-sensitive
+      ...vue3Essential,
       'no-console': isProd ? 'warn' : 'off',
       'no-debugger': isProd ? 'warn' : 'off',
     },
   },
 
-  // TS/JS source files
+  // TS/JS files
   {
     files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {
-      // If you prefer not to parse JS with ts-parser, split into two blocks.
       parser: tsParser,
-      parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-      },
-      globals: {
-        ...globals.browser,
-        unlayer: 'readonly',
-      },
+      parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
     },
-    plugins: {
-      '@typescript-eslint': tsPlugin, // 🔧 correct binding
-    },
+    plugins: { '@typescript-eslint': ts },
+    // Equivalent to '@typescript-eslint/recommended'
+    ...ts.configs.recommended,
     rules: {
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'off',
       'no-console': isProd ? 'warn' : 'off',
       'no-debugger': isProd ? 'warn' : 'off',
     },
   },
-];
+]
