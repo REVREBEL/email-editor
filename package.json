@@ -1,0 +1,62 @@
+{
+	"name": "vue-email-editor",
+	"version": "2.1.5",
+	"type": "module",
+	"main": "dist/vue-email-editor.cjs.js",
+	"module": "dist/vue-email-editor.es.js",
+	"unpkg": "dist/vue-email-editor.umd.js",
+	"jsdelivr": "dist/vue-email-editor.umd.js",
+	"types": "dist/vue-email-editor.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/vue-email-editor.d.ts",
+			"import": "./dist/vue-email-editor.es.js",
+			"require": "./dist/vue-email-editor.cjs.js",
+			"default": "./dist/vue-email-editor.es.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"adjust-types": "sed -i '' '1s/^\\/\\/\\/ <reference types=\\\"unlayer-types\\/embed.d.ts\\\" \\/>\\n/' ./dist/components/*.d.ts",
+		"build-types": "vue-tsc --emitDeclarationOnly && npm run adjust-types",
+		"build-bundle": "vite build && cd ./src/components && npm run build-types",
+		"release": "npm run build-bundle && npm publish"
+	},
+	"dependencies": {
+		"unlayer-types": "latest",
+		"vue": "^3.2.13",
+		"vue-router": "^4.4.0"
+	},
+	"peerDependencies": {
+		"vue": "^3.2.0",
+		"vue-router": "^4.0.0"
+	},
+	"devDependencies": {
+		"@babel/types": "^7.24.7",
+		"@eslint/js": "^9.36.0",
+		"@typescript-eslint/eslint-plugin": "^8",
+		"@typescript-eslint/parser": "^8",
+		"@vitejs/plugin-vue": "^6.0.1",
+		"@vue/cli-plugin-eslint": "~5.0.9",
+		"@vue/compiler-sfc": "^3.5.22",
+		"@vue/eslint-config-typescript": "^9.1.0",
+		"eslint": "^9",
+		"eslint-config-prettier": "^8.3.0",
+		"eslint-plugin-prettier": "^4.0.0",
+		"eslint-plugin-vue": "^9",
+		"prettier": "^2.4.1",
+		"typescript": "^5.2.2",
+		"vite": "^6.3.6",
+		"vue-dts-gen": "^0.3.0",
+		"vue-eslint-parser": "^10.2.0",
+		"vue-loader": "^17.4.2",
+		"vue-tsc": "^2.0.22"
+	}
+}
