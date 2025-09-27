@@ -53,7 +53,7 @@
 		"eslint-plugin-vue": "^9",
 		"prettier": "^2.4.1",
 		"typescript": "^5.2.2",
-		"vite": "^6.3.6",
+		"vite": "^5.3.2",
 		"vue-dts-gen": "^0.3.0",
 		"vue-eslint-parser": "^10.2.0",
 		"vue-loader": "^17.4.2",
