@@ -3,18 +3,16 @@
     <div class="container">
       <div id="bar">
         <h1>Vue Email Editor</h1>
-
         <button v-on:click="saveDesign">Save Design</button>
         <button v-on:click="exportHtml">Export HTML</button>
       </div>
-
       <EmailEditor
         :options="options"
         :min-height="minHeight"
+        script-url="https://editor.unlayer.com/embed.js"
         ref="emailEditor"
         v-on:load="editorLoaded"
-        v-on:ready="editorReady"
-      />
+        v-on:ready="editorReady"/>
     </div>
   </div>
 </template>
@@ -30,19 +28,15 @@ type EmailEditorInstance = InstanceType<typeof EmailEditor>;
 export default defineComponent({
   name: 'exampleView',
   components: {
-    EmailEditor,
+    EmailEditor
   },
-  data(): {
-    options: EmailEditorProps['options'];
-    minHeight: EmailEditorProps['minHeight'];
-  } {
+  data(): { options: EmailEditorProps['options'], minHeight: EmailEditorProps['minHeight'] } {
     return {
       minHeight: '1000px',
       options: {
         locale: 'en',
         projectId: 187691, // Using your project ID
-        appearance: {
-          // <-- The user's selection
+        appearance: { // <-- The user's selection
           theme: 'dark',
           panels: {
             tools: {
@@ -61,11 +55,8 @@ export default defineComponent({
                 name: 'my_button', // Unique identifier for the button
                 text: 'My Button', // The label that will appear on the button
                 icon: 'bookmark', // Icon that will appear on the button (optional)
-                onSetup: () => {}, // Function executed when the button is set up
-                onAction: (
-                  data: { text: string },
-                  callback: (text: string) => void
-                ) => {
+                onSetup: () => { }, // Function executed when the button is set up
+                onAction: (data: { text: string }, callback: (text: string) => void) => {
                   console.log(data.text); // Log or manipulate text editor data
                   callback(data.text + ' Updated'); // Perform action and update the text
                 },
@@ -148,7 +139,7 @@ export default defineComponent({
           ],
         },
       },
-    };
+    }
   },
   methods: {
     // called when the editor is created
@@ -160,30 +151,33 @@ export default defineComponent({
       console.log('editorReady');
     },
     saveDesign() {
-      (this.$refs.emailEditor as any)?.saveDesign((design: any) => {
-        console.log('saveDesign', design);
-      });
+      (this.$refs.emailEditor as any)?.saveDesign(
+        (design: any) => {
+          console.log('saveDesign', design);
+        }
+      )
     },
     exportHtml() {
-      (this.$refs.emailEditor as any)?.exportHtml((data: any) => {
-        console.log('exportHtml', data);
-      });
+      (this.$refs.emailEditor as any)?.exportHtml(
+        (data: any) => {
+          console.log('exportHtml', data);
+        }
+      )
     },
   },
 });
+
 </script>
 
 <style>
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
 }
 
-#app,
-#example {
+#app, #example {
   height: 100%;
 }
 
@@ -197,7 +191,7 @@ body {
 #bar {
   flex: 1;
   background-color: #163666;
-  color: #fff;
+  color: #FFF;
   padding: 10px;
   display: flex;
   max-height: 40px;
@@ -215,10 +209,10 @@ body {
   margin-left: 10px;
   font-size: 14px;
   font-weight: bold;
-  background-color: #fafafa;
+  background-color: #FAFAFA;
   color: #163666;
   border: 0px;
-  border-radius: 0.35rem;
+  border-radius: .35rem;
   max-width: 150px;
   cursor: pointer;
   text-transform: uppercase;

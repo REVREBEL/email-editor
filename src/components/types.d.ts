@@ -5,32 +5,32 @@ import { AppearanceConfig, DisplayMode, ToolsConfig } from 'state/types/types';
 export type Unlayer = typeof Embed;
 export type Editor = InstanceType<typeof EditorClass>;
 export interface EmailEditorProps {
-  editor: Editor | null;
-  editorId?: string | undefined;
-  minHeight?: number | string | undefined;
-  options?: Config;
-  scriptUrl: string;
-  /** @deprecated */
-  appearance?: AppearanceConfig | undefined;
-  /** @deprecated */
-  displayMode?: DisplayMode;
-  /** @deprecated */
-  locale?: string | undefined;
-  /** @deprecated */
-  projectId?: number | undefined;
-  /** @deprecated */
-  tools?: ToolsConfig | undefined;
-  /** @deprecated */
-  exportHtml: Editor['exportHtml'];
-  /** @deprecated */
-  loadDesign: Editor['loadDesign'];
-  /** @deprecated */
-  saveDesign: Editor['saveDesign'];
+    editor: Editor | null;
+    editorId?: string | undefined;
+    minHeight?: number | string | undefined;
+    options?: Config;
+    scriptUrl: string;
+    /** @deprecated */
+    appearance?: AppearanceConfig | undefined;
+    /** @deprecated */
+    displayMode?: DisplayMode;
+    /** @deprecated */
+    locale?: string | undefined;
+    /** @deprecated */
+    projectId?: number | undefined;
+    /** @deprecated */
+    tools?: ToolsConfig | undefined;
+    /** @deprecated */
+    exportHtml: Editor['exportHtml'];
+    /** @deprecated */
+    loadDesign: Editor['loadDesign'];
+    /** @deprecated */
+    saveDesign: Editor['saveDesign'];
 }
 declare global {
-  const unlayer: Unlayer;
-  interface Window {
-    __unlayer_lastEditorId: number;
-  }
+    const unlayer: Unlayer;
+    interface Window {
+        __unlayer_lastEditorId: number;
+    }
 }
 //# sourceMappingURL=types.d.ts.map

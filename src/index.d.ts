@@ -1,3 +1,4 @@
 import EmailEditor from './components/EmailEditor.vue';
 export { EmailEditor };
-//# sourceMappingURL=vue-email-editor.d.ts.map
+export default EmailEditor;
+//# sourceMappingURL=index.d.ts.map
