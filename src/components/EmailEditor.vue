@@ -15,6 +15,7 @@ let lastEditorId = 0;
 
 export default defineComponent({
   name: 'EmailEditor',
+  emits: ['load', 'ready'], // <-- Add this line
   props: {
     editorId: String as () => EmailEditorProps['editorId'],
     minHeight: {
