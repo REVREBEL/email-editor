@@ -1,45 +1,33 @@
-// ignore next line
-/// <reference types="unlayer-types/embed.d.ts" />
+// The callback function type for exportHtml
+export type ExportHtmlCallback = (data: { html: string; design: any }) => void;
 
-import Embed from 'embed/index';
-import { Editor as EditorClass } from 'embed/Editor';
-import { Config } from 'embed/Config';
-import { AppearanceConfig, DisplayMode, ToolsConfig } from 'state/types/types';
+// The callback function type for saveDesign
+export type SaveDesignCallback = (data: any) => void;
 
-export type Unlayer = typeof Embed;
-export type Editor = InstanceType<typeof EditorClass>;
+// The design object type for loadDesign
+export type Design = any;
 
-export interface EmailEditorProps {
-  editor: Editor | null;
-  editorId?: string | undefined;
-  minHeight?: number | string | undefined;
-  options?: Config;
-  scriptUrl: string;
-
-  // redundant props -- already available in options
-  /** @deprecated */
-  appearance?: AppearanceConfig | undefined;
-  /** @deprecated */
-  displayMode?: DisplayMode;
-  /** @deprecated */
-  locale?: string | undefined;
-  /** @deprecated */
-  projectId?: number | undefined;
-  /** @deprecated */
-  tools?: ToolsConfig | undefined;
-
-  /** @deprecated */
-  exportHtml: Editor['exportHtml'];
-  /** @deprecated */
-  loadDesign: Editor['loadDesign'];
-  /** @deprecated */
-  saveDesign: Editor['saveDesign'];
+// Interface for the Unlayer Editor
+export interface UnlayerEditor {
+  exportHtml: (callback: ExportHtmlCallback) => void;
+  saveDesign: (callback: SaveDesignCallback) => void;
+  loadDesign: (design: Design) => void;
+  addEventListener: (event: string, callback: () => void) => void;
 }
 
-declare global {
-  const unlayer: Unlayer;
+// This is the type that the parent component will see.
+// It defines the public-facing methods of your child component.
+export interface ChildComponentPublicMethods {
+  exportHtml: UnlayerEditor['exportHtml'];
+  saveDesign: UnlayerEditor['saveDesign'];
+  loadDesign: UnlayerEditor['loadDesign'];
+  editor: UnlayerEditor | null;
+}
 
-  interface Window {
-    __unlayer_lastEditorId: number;
-  }
+// These are the props that your child component will accept.
+export interface EmailEditorProps {
+  minHeight?: number | string;
+  options?: Record<string, any>;
+  scriptUrl?: string;
+  editorId?: string;
 }
