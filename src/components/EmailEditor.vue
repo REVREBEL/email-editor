@@ -2,8 +2,8 @@
   <div
     :id="id"
     class="unlayer-editor"
-    :style="{ minHeight: minHeight + 'px' }"
-  ></div>
+    :style="{ minHeight: editorMinHeight }">
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -31,8 +31,13 @@ const emit = defineEmits(['load', 'ready']);
 const editor = shallowRef<UnlayerEditor | null>(null);
 const id = computed(() => props.editorId || `editor-${++lastEditorId}`);
 
+const editorMinHeight = computed(() => {
+  if (typeof props.minHeight === 'number') return `${props.minHeight}px`;
+  return props.minHeight;
+});
+
 const loadEditor = () => {
-const options = { ...toRaw(props.options) };
+  const options = { ...toRaw(props.options) };
 
   // @ts-ignore
   const unlayer = window.unlayer;
@@ -76,16 +81,3 @@ defineExpose<ChildComponentPublicMethods>({
   loadDesign,
 });
 </script>
-
-
-
-
-
-
-
-<style scoped>
-.unlayer-editor {
-  flex: 1;
-  display: flex;
-}
-</style>

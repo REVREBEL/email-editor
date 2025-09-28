@@ -18,9 +18,9 @@ export interface UnlayerEditor {
 // This is the type that the parent component will see.
 // It defines the public-facing methods of your child component.
 export interface ChildComponentPublicMethods {
-  exportHtml: UnlayerEditor['exportHtml'];
-  saveDesign: UnlayerEditor['saveDesign'];
-  loadDesign: UnlayerEditor['loadDesign'];
+  exportHtml: UnlayerEditor["exportHtml"];
+  saveDesign: UnlayerEditor["saveDesign"];
+  loadDesign: UnlayerEditor["loadDesign"];
   editor: UnlayerEditor | null;
 }
 
