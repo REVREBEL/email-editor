@@ -12,33 +12,28 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
     "sourceMap": true,
     "baseUrl": ".",
+    "types": ["vite/client"],
     "typeRoots": [
+      "./node_modules",
       "./node_modules/@types",
-      "./node_modules/unlayer-types"
     ],
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
-    "lib": [
-      "esnext",
-      "dom",
-      "dom.iterable",
-      "scripthost"
-    ]
+    "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
   },
   "include": [
+    "src",
+    "env.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.d.ts",
     "src/**/*.vue",
     "tests/**/*.ts",
     "tests/**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules"
   ]
 }

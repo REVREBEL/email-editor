@@ -1,0 +1,14 @@
+// tsconfig.eslint.json 
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "*.ts",
+    "*.tsx",
+    "*.vue",
+    "eslint.config.mjs"
+  ],
+  "exclude": ["dist", "node_modules"]
+}

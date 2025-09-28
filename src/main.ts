@@ -1,21 +1,9 @@
 // @ts-ignore
-import { createApp } from 'vue/dist/vue.esm-bundler.js';
-import { createRouter, createWebHistory } from 'vue-router';
+import { createApp } from 'vue'
+import App from './App.vue'
+import { router } from './router'
 
-import Example from './views/Example.vue';
+createApp(App).use(router).mount('#app')
 
-const routes = [
-  { path: '/', component: Example },
-];
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes,
-});
 
-const app = createApp({});
-
-app.use(router);
-app.mount('#app');
-
-export default app;

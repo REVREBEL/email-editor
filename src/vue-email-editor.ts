@@ -1,2 +1,2 @@
-import EmailEditor from './components/EmailEditor.vue';
+import EmailEditor from "./components/EmailEditor.vue";
 export { EmailEditor };
