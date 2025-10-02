@@ -63,7 +63,7 @@
 		"eslint": "9",
 		"eslint-config-prettier": "^8.3.0",
 		"eslint-plugin-prettier": "^4.0.0",
-		"eslint-plugin-vue": "9",
+		"eslint-plugin-vue": "10",
 		"husky": "9.1.7",
 		"prettier": "^2.4.1",
 		"typescript": "^5.2.2",
