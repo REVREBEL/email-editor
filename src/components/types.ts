@@ -1,3 +1,5 @@
+import type { Ref } from 'vue';
+
 // The callback function type for exportHtml
 export type ExportHtmlCallback = (data: { html: string; design: any }) => void;
 
@@ -21,7 +23,7 @@ export interface ChildComponentPublicMethods {
   exportHtml: UnlayerEditor["exportHtml"];
   saveDesign: UnlayerEditor["saveDesign"];
   loadDesign: UnlayerEditor["loadDesign"];
-  editor: UnlayerEditor | null;
+  editor: Ref<UnlayerEditor | null>;
 }
 
 // These are the props that your child component will accept.
