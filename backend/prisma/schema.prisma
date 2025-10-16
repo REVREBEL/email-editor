@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model MergeTag {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  label       String
+  defaultValue String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DesignTag {
+  id         String   @id @default(uuid())
+  key        String
+  value      String
+  templateId String
+  template   Template @relation(fields: [templateId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model UserBlock {
+  id         String   @id @default(uuid())
+  name       String
+  category   String
+  block_json Json
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model MediaAsset {
+  id        String   @id @default(uuid())
+  filename  String
+  mime_type String
+  size_bytes Int
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String           @unique
+  name            String?
+  templates       Template[]
+  designVersions  DesignVersion[]
+  userBlocks      UserBlock[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Template {
+  id              String           @id @default(uuid())
+  name            String
+  user            User             @relation(fields: [userId], references: [id])
+  userId          String
+  versions        DesignVersion[]
+  currentVersion  DesignVersion?   @relation("CurrentTemplateVersion", fields: [currentVersionId], references: [id])
+  currentVersionId String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  designTags      DesignTag[]
+}
+
+model DesignVersion {
+  id          String    @id @default(uuid())
+  template    Template  @relation(fields: [templateId], references: [id])
+  templateId  String
+  design_json Json
+  version     Int
+  notes       String?
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime  @default(now())
+
+  @@unique([templateId, version])
+  templateAsCurrent Template? @relation("CurrentTemplateVersion")
+}

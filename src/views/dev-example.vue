@@ -1,0 +1,252 @@
+<script setup lang="ts">
+import { ref } from "vue";
+import EmailEditor from "../components/EmailEditor.vue";
+import api from "../services/api";
+import TemplatePicker from "../components/TemplatePicker.vue";
+import type {
+  ChildComponentPublicMethods,
+  SaveDesignCallback,
+  ExportHtmlCallback,
+  Design,
+} from "@/components/types";
+
+const emailEditor = ref<ChildComponentPublicMethods | null>(null);
+const fileManager = ref<any>(null);
+const currentTemplate = ref<any>(null);
+let autosaveTimeout: any = null;
+
+import { brandColors, brandFonts } from '../styles/brand';
+
+const options = {
+  projectId: 187691, // Using your project ID
+  locale: 'en',
+  version: "latest",
+  appearance: {
+    name: 'REVREBEL',
+    theme: "modern_light",
+    isClassic: false,
+    panels: {
+      tools: {
+        dock: 'right',
+      },
+    },
+    loader: {
+      url: 'https://res.cloudinary.com/revrebel/image/upload/v1758990562/RR/Favicon/revrebel_256_fgsrow.ico',
+    },
+  },
+  features: {
+    colorPicker: {
+      presets: Object.values(brandColors),
+    },
+    textEditor: {
+      spellChecker: true,
+      tables: true,
+      inlineFontControls: true,
+    },
+  },
+  fonts: {
+    showDefaultFonts: false,
+    customFonts: [
+      {
+        label: "Brand Primary",
+        value: brandFonts.primary,
+      },
+      {
+        label: "Brand Secondary",
+        value: brandFonts.secondary,
+      },
+    ],
+  },
+};
+
+// called when the editor is created
+const editorLoaded = () => {
+  emailEditor.value?.loadDesign({});
+  api.getMergeTags().then((response) => {
+    emailEditor.value?.editor?.setMergeTags(response.data);
+  });
+};
+
+// called when the editor has finished loading
+let imageCallback: any = null;
+
+const editorReady = () => {
+  console.log("editorReady");
+
+  const iframe = document.querySelector('#example iframe');
+  if (iframe) {
+    iframe.contentWindow?.document.addEventListener('drop', (event) => {
+      const block = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}');
+      emailEditor.value?.editor?.addBlock({ ...block, values: {} });
+    });
+  }
+
+  emailEditor.value?.editor?.registerCallback('selectImage', (data: any, callback: any) => {
+    imageCallback = callback;
+    fileManager.value?.showModal();
+  });
+
+  emailEditor.value?.editor?.registerCallback('updated', () => {
+    if (autosaveTimeout) {
+      clearTimeout(autosaveTimeout);
+    }
+    autosaveTimeout = setTimeout(() => {
+      autosave();
+    }, 1000); // Autosave after 1 second of inactivity
+  });
+};
+
+const onFileSelect = (url: string) => {
+  if (imageCallback) {
+    imageCallback({ url });
+  }
+};
+
+const autosave = () => {
+  if (!currentTemplate.value) return;
+
+  emailEditor.value?.saveDesign(
+    (design: Parameters<SaveDesignCallback>[0]) => {
+      api.createTemplate({ templateId: currentTemplate.value.id, design }).catch((error) => {
+        console.error('Error autosaving:', error);
+      });
+    }
+  );
+};
+
+const saveDesign = () => {
+  emailEditor.value?.saveDesign(
+    (design: Parameters<SaveDesignCallback>[0]) => {
+      console.log('Saving design...');
+      api.createTemplate({ name: 'Test Template', design }).then((response) => {
+        alert(`Template saved with ID: ${response.data.id}`);
+      }).catch((error) => {
+        console.error('Error saving template:', error);
+        alert('Error saving template. Please check the console for details.');
+      });
+    }
+  );
+};
+
+const onTemplateSelect = (template: any) => {
+  currentTemplate.value = template;
+  emailEditor.value?.loadDesign(template.design);
+};
+
+const linter = (design: any) => {
+  const issues: string[] = [];
+  const brandColorValues = Object.values(brandColors);
+  const brandFontValues = Object.values(brandFonts);
+
+  const checkNode = (node: any) => {
+    if (node.values) {
+      for (const key in node.values) {
+        if (key.includes('color') && !brandColorValues.includes(node.values[key])) {
+          issues.push(`Non-approved color found: ${node.values[key]}`);
+        }
+        if (key.includes('font-family') && !brandFontValues.includes(node.values[key])) {
+          issues.push(`Non-approved font found: ${node.values[key]}`);
+        }
+      }
+    }
+    if (node.content) {
+      node.content.forEach(checkNode);
+    }
+  };
+
+  design.body.rows.forEach((row: any) => {
+    row.columns.forEach((column: any) => {
+      column.contents.forEach(checkNode);
+    });
+  });
+
+  return issues;
+};
+
+const exportHtml = () => {
+  emailEditor.value?.exportHtml((data: any) => {
+    if (currentTemplate.value) {
+      api.exportHtml(currentTemplate.value.id, data.html).then(() => {
+        alert('HTML exported successfully!');
+      });
+    }
+  });
+};
+</script>
+
+<template>
+  <div id="example">
+    <div class="container">
+      <div id="bar">
+        <h1>REBEL Editor</h1>
+
+        <button @click="saveDesign">Save Design</button>
+        <TemplatePicker @select="onTemplateSelect" />
+        <button @click="exportHtml">Export HTML</button>
+      </div>
+
+      <EmailEditor
+        ref="emailEditor"
+        @load="editorLoaded"
+        @ready="editorReady"
+        :options="options"
+      />
+    </div>
+  </div>
+</template>
+
+<style>
+.unlayer-editor {
+  width: 100%;
+}
+</style>
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+#app,
+#example {
+  height: 100%;
+}
+
+#example .container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100%;
+}
+
+#bar {
+  flex: 1;
+  background-color: #163666;
+  color: #fff;
+  padding: 10px;
+  display: flex;
+  max-height: 40px;
+}
+
+#bar h1 {
+  flex: 1;
+  font-size: 16px;
+  text-align: left;
+}
+
+#bar button {
+  flex: 1;
+  padding: 10px;
+  margin-left: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  background-color: #fafafa;
+  color: #163666;
+  border: 0px;
+  border-radius: 0.35rem;
+  max-width: 150px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+</style>
