@@ -75,7 +75,7 @@ const loadDesign: UnlayerEditor['loadDesign'] = (design: Design) => {
 };
 
 defineExpose<ChildComponentPublicMethods>({
-  editor: editor.value,
+  editor: editor,
   exportHtml,
   saveDesign,
   loadDesign,

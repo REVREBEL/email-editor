@@ -38,6 +38,8 @@
       projectId: 187691, // Using your project ID
       locale: 'en',
       version: "latest",
+      displayMode: 'email',
+      devices: ['desktop', 'mobile'],
       appearance: {
           name: 'REVREBEL',
           theme: "modern_light",
@@ -53,6 +55,10 @@
           },
         },
       features: {
+        styleGuide: true,
+        headersAndFooters: true,
+        blocks: true,
+        svgImageUpload: true,
       //|||||||||||||||||||||||||||
         // Color Picker
         colorPicker: {
@@ -155,29 +161,92 @@
         },
       ],
     },
+    mergeTags: {
+      first_name: {
+        name: 'First Name',
+        value: '{{first_name}}',
+        sample: 'John',
+      },
+      last_name: {
+        name: 'Last Name',
+        value: '{{last_name}}',
+        sample: 'Doe',
+      },
+    },
   };
 
   // called when the editor is created
   const editorLoaded = () => {
-    emailEditor.value?.loadDesign(sample);
-  }
+    // The 'load' event is good for knowing the editor instance is created,
+    // but 'ready' is better for loading a design.
+    console.log('Editor instance has been created.');
+  };
 
-  // called when the editor has finished loading
-  const editorReady = () => {
-    console.log("editorReady");
-  }
+  // called when the editor has finished loading and is ready to be used
+  const editorReady = async () => {
+    console.log("Editor is ready.");
+
+    // --- Example: Loading from a backend API ---
+    try {
+      // Replace with your actual API endpoint to get the latest design
+      const response = await fetch('/api/v1/designs/latest');
+      if (response.ok) {
+        const savedDesign = await response.json();
+        emailEditor.value?.loadDesign(savedDesign);
+        console.log('Loaded latest design from server.');
+      } else {
+        // If no design is found on the server (e.g., 404), load a blank design
+        console.log('No saved design found on server, loading a blank design with custom background.');
+        emailEditor.value?.loadDesign(sample); // Fallback to sample for now
+      }
+    } catch (error) {
+      console.error('Failed to fetch design, loading default sample.', error);
+      emailEditor.value?.loadDesign(sample);
+    }
+  };
 
   const saveDesign = () => {
-    emailEditor.value?.saveDesign((design: Parameters<SaveDesignCallback>[0]) => {
-      console.log("saveDesign", design);
+    emailEditor.value?.saveDesign(async (designObject: Parameters<SaveDesignCallback>[0]) => {
+      console.log("saveDesign JSON:", designObject);
+
+      // --- Example: Saving to a backend API ---
+      try {
+        // Replace with your actual API endpoint
+        const response = await fetch('/api/v1/designs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json', // Include authentication headers (e.g., JWT) if your API is secured // 'Authorization': `Bearer ${your_auth_token}`
+          },
+          body: JSON.stringify(designObject),
+        });
+
+        if (!response.ok) throw new Error('Failed to save design');
+
+        alert('Design saved successfully!'); 
+      } catch (error) {
+        console.error('Error saving design:', error); 
+        alert('Could not save the design. Please try again.'); 
+      }
     });
-  }
+  };
 
   const exportHtml = () => {
     emailEditor.value?.exportHtml((data: Parameters<ExportHtmlCallback>[0]) => {
-      console.log("exportHtml", data);
+      const { html } = data;
+      console.log("exportHtml", html);
+
+      // --- Example: Downloading the HTML as a file ---
+      const blob = new Blob([html], { type: 'text/html' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'email.html'; // The name of the downloaded file
+
+      // This part is important to make it work in all browsers
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     });
-  }
+  };
 
 </script>
 
