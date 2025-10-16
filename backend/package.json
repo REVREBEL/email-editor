@@ -1,0 +1,30 @@
+{
+  "name": "email-editor-backend",
+  "version": "1.0.0",
+  "description": "Backend for the Vue Email Editor",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "cross-env DATABASE_URL=\"postgresql://rebelbot:XA8T4CGyBsPipGae9CG@192.168.8.105:5432/email_db\" ts-node src/index.ts",
+    "build": "tsc",
+    "serve": "node dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "cors": "^2.8.5",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "multer": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.7.2",
+    "prisma": "^6.17.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
