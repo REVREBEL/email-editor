@@ -25,12 +25,7 @@
 
   import { ref } from "vue";
   import EmailEditor from "../components/EmailEditor.vue";
-  import sample from "../data/sample.json";
-  import type {
-    ChildComponentPublicMethods,
-    SaveDesignCallback,
-    ExportHtmlCallback,
-  } from "@/components/types";
+  import { getLatestDesign, saveDesign as saveDesignApi } from "../services/api";
 
   const emailEditor = ref<ChildComponentPublicMethods | null>(null);
 
@@ -186,21 +181,12 @@
   const editorReady = async () => {
     console.log("Editor is ready.");
 
-    // --- Example: Loading from a backend API ---
-    try {
-      // Replace with your actual API endpoint to get the latest design
-      const response = await fetch('/api/v1/designs/latest');
-      if (response.ok) {
-        const savedDesign = await response.json();
-        emailEditor.value?.loadDesign(savedDesign);
-        console.log('Loaded latest design from server.');
-      } else {
-        // If no design is found on the server (e.g., 404), load a blank design
-        console.log('No saved design found on server, loading a blank design with custom background.');
-        emailEditor.value?.loadDesign(sample); // Fallback to sample for now
-      }
-    } catch (error) {
-      console.error('Failed to fetch design, loading default sample.', error);
+    const latestDesign = await getLatestDesign();
+    if (latestDesign) {
+      emailEditor.value?.loadDesign(latestDesign);
+      console.log('Loaded latest design from server.');
+    } else {
+      console.log('No saved design found on server, loading a blank design with custom background.');
       emailEditor.value?.loadDesign(sample);
     }
   };
@@ -209,23 +195,12 @@
     emailEditor.value?.saveDesign(async (designObject: Parameters<SaveDesignCallback>[0]) => {
       console.log("saveDesign JSON:", designObject);
 
-      // --- Example: Saving to a backend API ---
       try {
-        // Replace with your actual API endpoint
-        const response = await fetch('/api/v1/designs', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json', // Include authentication headers (e.g., JWT) if your API is secured // 'Authorization': `Bearer ${your_auth_token}`
-          },
-          body: JSON.stringify(designObject),
-        });
-
-        if (!response.ok) throw new Error('Failed to save design');
-
-        alert('Design saved successfully!'); 
+        await saveDesignApi(designObject);
+        alert('Design saved successfully!');
       } catch (error) {
-        console.error('Error saving design:', error); 
-        alert('Could not save the design. Please try again.'); 
+        console.error('Error saving design:', error);
+        alert('Could not save the design. Please try again.');
       }
     });
   };
