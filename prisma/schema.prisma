@@ -1,9 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
+// Prisma schema (models + enums + indexes)
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -12,4 +7,100 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Org {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+
+  templates Template[]
+  mergeTags MergeTag[]
+  media     MediaAsset[]
+}
+
+model Template {
+  id                        String   @id @default(cuid())
+  orgId                     String
+  name                      String
+  slug                      String   @unique
+  status                    TemplateStatus @default(DRAFT)
+  currentDraftVersionId     String?  @unique
+  currentPublishedVersionId String?  @unique
+  styleGuideId              String?
+  deletedAt                 DateTime?
+
+  org       Org      @relation(fields: [orgId], references: [id])
+  versions  Version[]
+
+  @@index([orgId, name])
+  @@index([deletedAt])
+}
+
+enum TemplateStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Version {
+  id           String   @id @default(cuid())
+  templateId   String
+  number       Int
+  status       VersionStatus
+  designJson   Json
+  htmlCompiled String?
+  rendererName String?
+  rendererVer  String?
+  inlinerVer   String?
+  createdById  String
+  createdAt    DateTime @default(now())
+  publishedAt  DateTime?
+  locked       Boolean  @default(false)
+
+  template     Template @relation(fields: [templateId], references: [id])
+
+  @@unique([templateId, number])
+  @@index([templateId, status])
+}
+
+enum VersionStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model MergeTag {
+  id           String   @id @default(cuid())
+  orgId        String
+  key          String
+  label        String?
+  defaultValue String?
+  system       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  org          Org      @relation(fields: [orgId], references: [id])
+
+  @@unique([orgId, key])
+  @@index([orgId, key])
+}
+
+model MediaAsset {
+  id          String   @id @default(cuid())
+  orgId       String
+  filename    String
+  contentType String
+  byteSize    Int
+  storageKey  String
+  publicUrl   String?
+  checksum    String
+  meta        Json?
+  createdById String
+  createdAt   DateTime @default(now())
+  deletedAt   DateTime?
+
+  org         Org      @relation(fields: [orgId], references: [id])
+
+  @@unique([orgId, checksum])
+  @@index([orgId, createdAt])
 }
