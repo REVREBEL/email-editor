@@ -1,19 +1,10 @@
 # Agent Issues — Vue Email Editor Integration (Unlayer)
 
 **Issues**
-A list of open isssues that need to be addressed or verified.
+Please address the open isssues that need to be addressed or verified.
 
 
-Please address the comments from this code review:
-
-## Overall Comments
-- Please remove sensitive credentials (database URLs and passwords) and ensure they’re loaded from environment variables rather than hardcoded in the repo.
-- This PR includes large AGENTS.md and auto-generated chat session logs that shouldn’t be versioned—please clean up these large files or move them to a separate draft/archival location.
-- There are numerous console.log statements in both frontend and backend—consider replacing them with a configurable logging utility and appropriate log levels to avoid clutter.
-
-## Individual Comments
-
-### Comment 1
+### Issue 1 | 10-19-2025
 <location> `src/views/Example.vue:193` </location>
 <code_context>
    };
@@ -30,7 +21,7 @@ Please address the comments from this code review:
 Console.log statements may clutter production logs and risk exposing sensitive data. Use a logging utility or remove these before deployment.
 </issue_to_address>
 
-### Comment 2
+### Issue 2 | 10-19-2025
 <location> `backend/src/index.ts:22-23` </location>
 <code_context>
 
@@ -48,7 +39,7 @@ Console.log statements may clutter production logs and risk exposing sensitive d
 Sanitize logged data or restrict logging level to prevent exposure of sensitive information in production environments.
 </issue_to_address>
 
-### Comment 3
+### Issue 3 | 10-19-2025
 <location> `backend/src/index.ts:98` </location>
 <code_context>
 -    console.error(error);
@@ -73,7 +64,7 @@ Using 'any' may hide issues if 'message' is missing. Use a type guard or provide
 ```
 </issue_to_address>
 
-### Comment 4
+### Issue 4 | 10-19-2025
 <location> `AGENTS.md/AGENTS.md:442` </location>
 <code_context>
 +
@@ -94,7 +85,7 @@ Change 'nework' to 'network' in the documentation.
 ```
 </issue_to_address>
 
-### Comment 5
+### Issue 5 | 10-19-2025
 <location> `AGENTS.md/AGENTS.md:444-446` </location>
 <code_context>
 +
@@ -117,7 +108,7 @@ including the db user and password.
 ```
 </issue_to_address>
 
-### Comment 6
+### Issue 6 | 10-19-2025
 <location> `AGENTS.md/chat/session-2025-10-16T05-57-bc2d923c.json:465` </location>
 <code_context>
 XA8T4CGyBsPipGae9CG

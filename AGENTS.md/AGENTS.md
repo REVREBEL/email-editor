@@ -306,15 +306,110 @@ unique (org_id, key)
 - Signed URL TTL default: 15 minutes.
 - Metrics: render latency, publish latency, error rates.
 
+## ⚙️ Local Development Notes
+
+* **Server Control:** When working on local development, please let me handle starting and stopping the dev server — manual restarts during active work can cause the agent to freeze or lose state.
+
+* **Port Consistency:** Keep the local dev server port fixed in `vite.config.ts` at:
+
+  ```ts
+  server: {
+    port: 9022
+  }
+  ```
+
+* **Network Flow / Reverse Proxy Setup:**
+  External requests from outside IPs follow this path:
+
+  ```
+  SSL :443 (External Request)
+        ↓
+  Reverse Proxy Server
+        ↓
+  Local Dev Server (192.168.8.137:9022)
+  ```
+
+This ensures stable connections during testing and remote access, while avoiding conflicts with the agent runtime.
+
 
 ## Issues
 - Review the AGENT_issues.md file for a list of current open issues.
 - Use this file as the source of truth for tracking bugs, feature gaps, tech debt, and pending decisions.
 
+
 ## Resolved
 - When an issue listed in AGENT_issues.md is confirmed fixed or completed, move that exact line into AGENT_resolved.md.
 - Immediately below the original line, add the tag RESOLVED followed by the data and include a brief summary of the high-level steps taken to resolve it.
 - This ensures historical traceability and keeps the issues list clean while preserving context for future reference.
+
+---
+
+## 🧰 Issue Template
+
+### Issue [#] | [MM-DD-YYYY]
+
+**Title:** [Short, descriptive title of the issue]
+
+**Description:**
+[Detailed description of the issue, how it was discovered, and any reproduction steps if relevant.]
+
+**Impact:**
+[What part of the system is affected and how it impacts users or workflows.]
+
+**Status:** Open
+**Priority:** [Low | Medium | High | Critical]
+**Owner:** [Team or individual responsible]
+**Reference:** [Optional: internal tracking ID, issue number, or ticket link]
+
+---
+
+### RESOLVED | [MM-DD-YYYY]
+
+**Resolution Summary:**
+[Brief explanation of the fix or solution implemented.]
+
+**Commit:** [Commit hash or link]
+**Linked PR:** [PR number or link]
+**Verified By:** [QA name or date]
+
+---
+
+## ✅ Examples — Real Issue
+
+### Issue 1 | 10-19-2025
+
+**Title:** Autosave fails silently when the editor tab loses focus.
+
+**Description:**
+Users reported that when the browser tab is backgrounded during editing, the `design:updated` event is not always triggered. As a result, autosave does not fire, leading to potential data loss if the tab is closed or refreshed before a manual save.
+
+**Impact:**
+
+* Draft data can be lost unexpectedly.
+* Increases user frustration and reduces trust in autosave reliability.
+
+**Status:** Open
+**Priority:** High
+**Owner:** Frontend Integration Team
+**Reference:** `editor_autosave_event_bug`
+
+---
+
+### RESOLVED | 10-25-2025
+
+**Resolution Summary:**
+✅ Added a visibility change listener to trigger a final autosave before the tab loses focus.
+✅ Implemented a fallback debounce timer to ensure autosave fires even if the event is skipped.
+✅ Added logging and metrics to monitor autosave failures in production.
+
+**Commit:** [`abc1234`](https://github.com/REVREBEL/email-editor/commit/abc1234)
+**Linked PR:** #42
+**Verified By:** QA on staging (10-24-2025)
+
+
+# AGENT Issues & Resolution Log
+
+This document is used to track current issues, their resolution status, and the steps taken once resolved.
 
 ---
 
@@ -379,3 +474,7 @@ Users reported that when the browser tab is backgrounded during editing, the `de
 **Commit:** [`abc1234`](https://github.com/REVREBEL/email-editor/commit/abc1234)
 **Linked PR:** #42
 **Verified By:** QA on staging (10-24-2025)
+
+---
+
+
