@@ -1,6 +1,6 @@
 import type { Design } from '../components/types';
 
-const API_BASE_URL = 'https://unlayer.rebel.camp/api';
+const API_BASE_URL = '/api';
 
 export const getLatestDesign = async (): Promise<Design | null> => {
   try {

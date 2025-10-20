@@ -23,20 +23,28 @@
  
 <script setup lang="ts">
 
-  import { ref } from "vue";
-  import EmailEditor from "../components/EmailEditor.vue";
-  import { getLatestDesign, saveDesign as saveDesignApi } from "../services/api";
+import { ref } from "vue";
+import "revrebel-fonts/rebel-fonts.css";
+import EmailEditor from "../components/EmailEditor.vue";
+import { getLatestDesign, saveDesign as saveDesignApi } from "../services/api";
+import sample from "../data/sample.json";
+import type {
+  ChildComponentPublicMethods,
+  SaveDesignCallback,
+  ExportHtmlCallback,
+} from "../components/types";
 
   const emailEditor = ref<ChildComponentPublicMethods | null>(null);
 
   const options = {
       projectId: 187691, // Using your project ID
       locale: 'en',
+    safe: true,
       version: "latest",
       displayMode: 'email',
       devices: ['desktop', 'mobile'],
       appearance: {
-          name: 'REVREBEL',
+        name: 'revrebel',
           theme: "modern_light",
           isClassic: false,
           //////////////////////*************************************** */
@@ -121,38 +129,28 @@
       //|||||||||||||||||||||||||||
       customFonts: [
         {
-          label: 'Barlow',
+          label: "Barlow",
           value: '"Barlow", sans-serif',
-          url: 'https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,800;1,800;0,900;1,900', // url is required, even for system fonts
-          weights: [{ label: 'Extra Bold', value: 800 }, { label: 'Black', value: 900 }],
         },
         {
-          label: 'Khand',
+          label: "Khand",
           value: '"Khand", sans-serif',
-          url: 'https://fonts.googleapis.com/css2?family=Khand:wght@500;600;700',
-          weights: [{ label: 'Medium', value: 500 }, { label: 'Semi Bold', value: 600 }, { label: 'Bold', value: 700 }],
         },
         {
-          label: 'Public Sans',
-          value: '"Public Sans", sans-serif',
-          url: 'https://fonts.googleapis.com/css2?family=Public+Sans:wght@100..900&display=swap',
-          weights: [
-            { label: 'Light', value: 300 },
-            { label: 'Regular', value: 400 },
-            { label: 'Medium', value: 500 },
-            { label: 'Semi Bold', value: 600 },
-          ],
+          label: "Fira Code",
+          value: '"Fira Code", monospace',
         },
         {
-          label: 'General Sans',
-          value: "'General Sans', sans-serif",
-          url: 'https://fonts.cdnfonts.com/css/general-sans',
-          weights: [
-            { label: 'Light', value: 300 },
-            { label: 'Regular', value: 400 },
-            { label: 'Medium', value: 500 },
-            { label: 'Semi Bold', value: 500 },
-          ],
+          label: "General Sans",
+          value: '"General Sans", sans-serif',
+        },
+        {
+          label: "Supreme",
+          value: '"Supreme", sans-serif',
+        },
+        {
+          label: "Pacifico",
+          value: '"Pacifico", cursive',
         },
       ],
     },
@@ -192,6 +190,7 @@
   };
 
   const saveDesign = () => {
+    console.log('saveDesign function called');
     emailEditor.value?.saveDesign(async (designObject: Parameters<SaveDesignCallback>[0]) => {
       console.log("saveDesign JSON:", designObject);
 

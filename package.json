@@ -19,7 +19,7 @@
 		"dist"
 	],
 	"scripts": {
-		"dev": "vite --host",
+		"dev": "vite --host --port 9022",
 		"preview": "vite preview --host",
 		"ci": "npm run lint && npm run type-check && npm run test",
 		"test": "vitest",

@@ -409,7 +409,7 @@ VITE_API_BASE=https://api.example.com
 VITE_UNLAYER_PROJECT_ID=xxxxxxxx
 
 # Backend
-DATABASE_URL=postgresql://user:pass@host:5432/db
+DATABASE_URL=postgresql://rebelbot:pass@192.168.8.105:5432/email_db
 JWT_SECRET=supersecret
 S3_ENDPOINT=https://s3.example.com
 S3_BUCKET=emails-media
@@ -435,3 +435,19 @@ CORS_ORIGIN=https://app.example.com
 3. Require SSO?
 4. Need email client compatibility (Litmus) in CI?
 5. Thumbnail generation for templates/blocks (serverless vs queue)?
+
+
+## POSTGRES CONNECTION CREDENTIALS
+
+** The Postgres Database is hosted on a local nework server. 
+It's NOT running on docker on this machine. 
+Connect using either of the option below, both contain the same 
+endpoint for the connection string to the network server at 192.168.8.105:5432 
+including the db user and password.
+
+
+Option 1
+DATABASE_URL="op://AI/PostgresSQL/connection string"
+
+Option 2
+CONNECTION_STRING="${DATABASE_URL}$""
