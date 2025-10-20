@@ -24,8 +24,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-debug.log*
+AGENTS.MD/chat/
 GEMINI.MD/
-
 
 # pnpm store (per-project) — pnpm keeps a global store elsewhere; this is just in case
 .pnpm-store/
