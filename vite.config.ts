@@ -22,14 +22,22 @@ export default defineConfig({
     }),
   ],
   customLogger: logger,
-  resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      'revrebel-fonts': path.resolve(__dirname, '../fonts')
+    }
+  },
   server: {
-    port: 9021,
+    port: 9022,
     host: true,
     allowedHosts: ['.rebel.camp', 'revrebel.io', 'localhost'],
     hmr: {
       protocol: 'wss',
       host: 'unlayer.rebel.camp'
+    },
+    headers: {
+      'Referrer-Policy': 'strict-origin-when-cross-origin'
     }
   },
   build: {
