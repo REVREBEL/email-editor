@@ -1,4 +1,4 @@
-# Gemini Agent Brief — Vue Email Editor Integration (Unlayer)
+# Agent Brief — Vue Email Editor Integration (Unlayer)
 
 ## Project Goal
 
@@ -151,16 +151,53 @@ This brief serves as the single source of truth for both **product and engineeri
 #### Example Style-Guide Tokens
 ```json
 {
-  "fonts": { "primary": "Inter, Arial, sans-serif" },
   "colors": {
+    "background": {
+      "dark": "#B2D3DE",
+      "light": "#FAFAFA"
+    },
     "brandPrimary": "#163666",
     "brandSecondary": "#B2D3DE",
-    "text": "#0b1320",
-    "bg": "#ffffff"
+    "button": {
+      "dark": "#163666",
+      "light": "#B2D3DE"
+    },
+    "danger": "#F37D59",
+    "error": "#E05047",
+    "info": "#B2D3DE",
+    "textDark": "#0B1320",
+    "textLight": "#334155",
+    "warning": "#FACA78"
   },
-  "radii": { "button": 6 },
-  "spacing": { "contentGutter": 24, "sectionGap": 32 },
-  "maxWidth": 640
+  "fontFamily": {
+    "btn": "'Khand', 'Oswald', 'Impact', sans-serif",
+    "header": "'Khand', 'Oswald', 'Impact', sans-serif",
+    "primary": "'General Sans', 'Public Sans', 'Inter', 'Andale Mono', Tahoma, sans-serif"
+  },
+  "fontWeight": {
+    "btn": 700,
+    "header": 700,
+    "primary": 400
+  },
+  "layout": {
+    "maxWidth": 640
+  },
+  "padding": {
+    "btn": {
+      "top": 20,
+      "right": 24,
+      "bottom": 20,
+      "left": 24
+    }
+  },
+  "radius": {
+    "btn": 3
+  },
+  "spacing": {
+    "btn": 8,
+    "contentGutter": 24,
+    "sectionGap": 32
+  }
 }
 ```
 

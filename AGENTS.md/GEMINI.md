@@ -1,453 +1,519 @@
 # Gemini Agent Brief — Vue Email Editor Integration (Unlayer)
 
-**Project Goal**
-Integrate the **Unlayer Vue Email Editor** (`vue-email-editor`) into a Vue app, modernize config (docs are a bit out-of-date), and add a persistence & media layer so users can **create, edit, and save email designs** to **PostgreSQL**, with support for:
+## Review History in /AGENTS.md/chat/
 
-* Template Picker
-* File Manager
-* Custom Media Library
-* User Saved Blocks
-* Style Guide (design tokens / brand guardrails)
-* Merge Tags
-* Design Tags
-* User Template Updates (versioning & autosave)
+## Project Goal
 
-The work should use the `dev-example.vue` as the starting reference to enumerate features and integration points.
+Integrate the **Unlayer Vue Email Editor** (`vue-email-editor`) into a Vue app, modernize the configuration, and add a persistence & media layer so users can **create, edit, version, and publish email designs** to **PostgreSQL**, with support for:
+
+- Template Picker
+- File Manager & Custom Media Library
+- User Saved Blocks
+- Style Guide (design tokens / brand guardrails)
+- Merge Tags & Design Tags
+- Versioning & Autosave
+- Publishing workflow (draft → publish → usage)
+
+This brief serves as the single source of truth for both **product and engineering** — describing the high-level vision, architecture, backend contracts, data model, DevOps considerations, and operational guardrails.
 
 ---
 
 ## High-Level Architecture
 
-**Frontend (Vue 3 + Vite)**
+### Frontend (Vue 3 + Vite)
+- `vue-email-editor` component wrapper
+- State store (Pinia) for user/session, current template, save status
+- UI surfaces: Template Picker modal, File Manager modal, Saved Blocks, Style Guide panel, Merge/Design tag menus
 
-* `vue-email-editor` component wrapper
-* State store (Pinia) for user/session, current template, save status
-* UI surfaces: Template Picker modal, File Manager modal, Saved Blocks, Style Guide panel, Merge/Design tag menus
+### Backend (Node/Express or Nest)
+- REST/JSON endpoints for templates, designs, user blocks, media, tags
+- Auth middleware (JWT or session cookie) + RBAC for media/templates
 
-**Backend (Node/Express or Nest)**
+### Database (PostgreSQL + Prisma)
+- Tables: `users`, `templates`, `versions`, `user_blocks`, `media_assets`, `merge_tags`, `design_tags`
+- Soft-deletes + versioning (immutable `versions` rows)
 
-* REST/JSON endpoints for templates, designs, user blocks, media, tags
-* Auth middleware (JWT or session cookie) + RBAC for media/templates
+### Object Storage
+- S3-compatible (AWS S3, Cloudflare R2, GCS) for media assets
+- Signed upload URLs, MIME checks, image processing pipeline (optional)
 
-**Database (PostgreSQL + Prisma/Knex)**
-
-* Tables: `users`, `templates`, `design_versions`, `user_blocks`, `media_assets`, `merge_tags`, `design_tags`
-* Soft-deletes + versioning (immutable `design_versions`)
-
-**Object Storage** (recommended)
-
-* S3-compatible (S3, Cloudflare R2, or GCS) for media assets
-* Signed upload URLs, virus/mime checks, image resizes via webhook/queue (optional)
-
-**Queues (optional)**
-
-* For heavy exports (HTML inlining, image optimization)
+### Queues (optional)
+- For heavy exports (HTML inlining, image optimization)
 
 ---
 
-## Database Schema (Proposed)
+## Core End-to-End Flows
 
-```sql
--- users
-id (uuid pk)
-email (text unique not null)
-name (text)
-role (text check in ['admin','editor','viewer'])
-created_at, updated_at
+### 1. Template Lifecycle (Draft → Publish → Use)
+- **Create Template**: Name + org → auto-create initial **Draft v1**.
+- **Edit Draft**: Update content (`design_json`), preview HTML, autosave.
+- **Publish**: Locks draft and sets `currentPublishedVersionId`. Draft remains editable or is cleared.
+- **Fork New Draft**: Create a new draft from the published version.
+- **Archive**: Soft-delete templates (never delete versions).
 
--- templates (logical entity)
-id (uuid pk)
-owner_id (uuid fk -> users)
-name (text)
-slug (text unique)
-status (text check in ['draft','published','archived'])
-current_version_id (uuid fk -> design_versions)
-style_guide_id (uuid null)
-created_at, updated_at
+### 2. Versioning
+- Templates have at most **one current draft** and **one current published version**.
+- Publishing locks a version (`locked=true`, `status=PUBLISHED`).
+- Version numbers increment sequentially per template.
 
--- design_versions (history)
-id (uuid pk)
-template_id (uuid fk -> templates)
-version (int)
-design_json (jsonb) -- Unlayer design
-html_export (text)  -- optional cached export
-notes (text)
-created_by (uuid fk -> users)
-created_at
+### 3. Merge Tags
+- Defined **per org** with unique `(org_id, key)`.
+- System tags (e.g., `{{ unsubscribe_url }}`) are reserved.
+- Unknown tags → validation error with list of unknown keys.
 
--- user_blocks (saved blocks/snippets)
-id (uuid pk)
-owner_id (uuid fk -> users)
-name (text)
-category (text)
-block_json (jsonb)
-created_at, updated_at
+### 4. Media Assets
+- Upload to storage; store `storage_key` and `checksum`.
+- Signed URLs generated on demand (`public_url` optional).
+- Deduplicate on `(org_id, checksum)`.
 
--- media_assets
-id (uuid pk)
-owner_id (uuid fk -> users)
-folder (text)
-filename (text)
-mime_type (text)
-size_bytes (int)
-url (text) -- public or signed
-meta (jsonb) -- width/height, exif, etc.
-created_at, updated_at
+### 5. Render & Preview
+- Compile `design_json` → HTML; substitute merge tags; inline CSS.
+- Generate **test sends** (rate-limited).
+- Capture renderer metadata for reproducibility.
 
--- merge_tags (per org/app scope)
-id (uuid pk)
-key (text unique)      -- e.g. "user.first_name"
-label (text)
-default_value (text)
-created_at, updated_at
+### 6. Usage in Sending
+- External systems reference `template_id` + optional `version_id`.
+- If `version_id` is omitted → latest `currentPublishedVersionId` is used.
+- Audit logs record which version was rendered.
 
--- design_tags (arbitrary, per template)
-id (uuid pk)
-template_id (uuid fk -> templates)
-key (text)
-value (text)
-created_at, updated_at
-```
+### 7. Access Control & Audit
+- RBAC per org (Author / Publisher / Admin).
+- Audit logs: template changes, version publishes, asset uploads.
 
----
-
-## Backend API (Contract)
-
-**Auth**
-
-* `POST /api/auth/login` → { token }
-* `GET /api/auth/me`
-
-**Templates & Versions**
-
-* `GET /api/templates?owner=:id&status=draft|published`
-* `POST /api/templates` { name, slug? } → { id }
-* `GET /api/templates/:id`
-* `PATCH /api/templates/:id` { name?, status? }
-* `POST /api/templates/:id/versions` { design_json, notes? } → { version_id }
-* `GET /api/templates/:id/versions` → list
-* `GET /api/templates/:id/versions/:version` → { design_json, html_export? }
-* `POST /api/templates/:id/export` → { html } (server exports via Unlayer HTML export or MJML pipeline)
-* `POST /api/templates/:id/autosave` { design_json }
-
-**Saved Blocks**
-
-* `GET /api/blocks?owner=:id`
-* `POST /api/blocks` { name, category, block_json }
-* `DELETE /api/blocks/:id`
-
-**Media**
-
-* `GET /api/media?folder=:path`
-* `POST /api/media/sign` { filename, mime } → { uploadUrl, assetUrl }
-* `DELETE /api/media/:id`
-
-**Tags**
-
-* `GET /api/merge-tags` → [{ key, label, default }]
-* `GET /api/templates/:id/design-tags` → key/value list
-* `POST /api/templates/:id/design-tags` { key, value }
+### 8. Webhooks & Events
+- `template.published`, `template.version.created`, `asset.created`, `send.previewed`
 
 ---
 
 ## Frontend Integration — Key Tasks
 
-1. **Start from `dev-example.vue`**
+### 1. Start from `dev-example.vue`
+- Initialize `vue-email-editor`
+- Load merge tags, initial design
+- Implement `saveDesign`, `exportHtml`, `loadDesign` methods
 
-   * Ensure ref access to editor (`<EmailEditor ref="editorRef" :options="editorOptions" @load="onLoad" />`).
-   * Implement `onLoad` to set config, load initial design if `template.current_version` exists.
-   * Expose `saveDesign`, `exportHtml`, `loadDesign` via methods bound to UI buttons.
+### 2. Editor Event Plumbing
+- Listen for `design:updated` (dirty state) → throttled autosave (5–10s).
+- Register merge tags on load and persist last-used set per org/user.
+- Override media selection to route through your File Manager (custom picker → returns URL to Unlayer).
 
-2. **Editor Options (enable features)**
+### 3. Editor Options
+- Template Picker
+- File Manager (custom picker + signed uploads)
+- Saved Blocks
+- Style Guide enforcement
+- Merge Tag registration
+- Design Tags form
 
-   * **Template Picker**: wrapper UI modal lists `/api/templates`; on select → `editor.loadDesign` with chosen version.
-   * **File Manager / Custom Media Library**: provide a custom picker that lists `/api/media`, supports upload via `/api/media/sign`, and returns selected file URL to the editor (see *Asset Picker Hook* below).
-   * **User Saved Blocks**: implement UI to insert blocks from `/api/blocks`; use Unlayer `editor.addModule` or `editor.loadDesign` fragment merge (see *Blocks Hook* below).
-   * **Style Guide**: pass base styles via editor `appearance` + enforceable tokens (colors, fonts). Provide a read-only panel describing brand rules; optional lint on export.
-   * **Merge Tags**: load from `/api/merge-tags` and register with editor (see *Merge/Design Tags* below).
-   * **Design Tags**: bind key/value to template context; expose small form to edit; persist via `/api/templates/:id/design-tags`.
-   * **User Template Updates**: when editing, autosave to `design_versions` (new draft version) every N seconds or on change events.
+### 4. Autosave
+- Throttled autosave → `POST /api/templates/:id/autosave`
+- Cancel on route leave; show states: *Saving… / Saved / Failed*
+- On revisit, if autosave is newer than draft, prompt to **Restore**
 
-3. **Autosave & Versioning**
+### 5. Export Pipeline
+- `exportHtml` → POST `/api/versions/:versionId/render`
+- Cache multiple export variants
+- Inline CSS, absolutize URLs, sanitize & minify output
+- Store compatibility results (e.g., linter results, deliverability checks)
 
-   * Throttle change listener (e.g., 5–10s). On trigger → `editor.saveDesign` → POST `/api/templates/:id/autosave`.
-   * Manual **Save New Version** button → POST `/api/templates/:id/versions` to bump `version` and set `current_version_id`.
+### 6. Version Browser
+- Side panel list with author, timestamp
+- “Open as draft” and “Restore” actions
 
-4. **Export Pipeline**
+### 7. Publish Flow
+- Run linter → show grouped violations → block or warn based on severity
 
-   * `Export HTML` button → `editor.exportHtml(cb)` then POST to `/api/templates/:id/versions/:v/export` to cache.
-   * Optional: inline CSS and validate HTML (ESP compatibility).
+### 8. Merge-Tag Picker
+- Searchable; insert at cursor; preview with defaults
 
-5. **Asset Picker Hook (Images/Files)**
-
-   * Provide a custom picker callable from the editor’s image/file selection UI (custom toolbar button or override file-select handler). The picker should:
-
-     * List folders/files
-     * Upload via signed URL
-     * Return a selected asset URL back to the editor callback
-
-6. **Blocks Hook (Saved Blocks)**
-
-   * Allow selecting a saved block, then insert into design using editor API to add content at cursor or append to body. Provide preview thumbnails.
-
-7. **Merge/Design Tags Integration**
-
-   * Register merge tags with the editor so users can insert tokens like `{{ user.first_name }}`.
-   * Expose Design Tags (e.g., `campaign_id`, `audience`) in a side panel and persist to DB.
-
-8. **Style Guide Enforcement**
-
-   * Configure `appearance` defaults: brand colors, font stacks, container widths, button radii.
-   * Optionally add a pre-export check to warn if non-approved colors/fonts are detected in `design_json`.
-
-9. **Template Picker**
-
-   * Modal with search/sort (owner, updated_at, status). Selecting a template loads its latest version; provide “Duplicate” to fork.
-
-10. **File Manager**
-
-* Tree view for folders; grid for files; drag-drop upload; server-side pagination.
+### 9. File Manager
+- Single picker UX across image/file tools
+- Thumbnails, folder support, drag-drop upload
+- AV scan (async) on upload
+- Responsive sizes and quotas with retention policies
 
 ---
 
-## Example Vue Pseudocode (Key Spots)
+## Guardrails & Invariants
 
-```ts
-// dev-example.vue (sketch)
+- Published versions are immutable (`locked=true`).
+- Drafts are the only mutable state.
+- Merge tags unique per org (case-insensitive).
+- Media URLs are derived from `storage_key`; ephemeral signed URLs should never be persisted.
+- Assets cannot be deleted if referenced by any version.
+- Publish without a draft → `409 Conflict`.
 
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import EmailEditor from 'vue-email-editor'
-import { useSession } from '@/stores/session'
-import { api } from '@/lib/api'
+### Style-Guide Guardrails
+- Central JSON of brand tokens (colors, fonts, radii, spacing).
+- Pre-publish/export **linter**:
+  - Reject/warn on non-approved fonts/colors/line-heights.
+  - Enforce alt text and basic contrast checks.
+- Optionally lock disallowed tools/colors in Unlayer options.
 
-const editorRef = ref<any>(null)
-const editorOptions = ref({
-  projectId: import.meta.env.VITE_UNLAYER_PROJECT_ID, // if needed
-  appearance: {
-    theme: 'dark',
-    panels: { tools: { dock: 'left' } },
-    fonts: { defaultFont: 'Inter' },
-    colors: ['#163666','#B2D3DE','#0b1320','#e8eef6']
+#### Example Style-Guide Tokens
+```json
+{
+  "colors": {
+    "background": {
+      "dark": "#B2D3DE",
+      "light": "#FAFAFA"
+    },
+    "brandPrimary": "#163666",
+    "brandSecondary": "#B2D3DE",
+    "button": {
+      "dark": "#163666",
+      "light": "#B2D3DE"
+    },
+    "danger": "#F37D59",
+    "error": "#E05047",
+    "info": "#B2D3DE",
+    "textDark": "#0B1320",
+    "textLight": "#334155",
+    "warning": "#FACA78"
   },
-  mergeTags: [], // load in onLoad
-})
-
-function onLoad() {
-  // Load merge tags
-  api.get('/merge-tags').then(tags => {
-    editorRef.value?.editor?.setMergeTags?.(tags)
-  })
-
-  // Load selected template design
-  const t = /* from route/store */
-  if (t?.current_version) {
-    editorRef.value?.editor?.loadDesign(t.current_version.design_json)
+  "fontFamily": {
+    "btn": "'Khand', 'Oswald', 'Impact', sans-serif",
+    "header": "'Khand', 'Oswald', 'Impact', sans-serif",
+    "primary": "'General Sans', 'Public Sans', 'Inter', 'Andale Mono', Tahoma, sans-serif"
+  },
+  "fontWeight": {
+    "btn": 700,
+    "header": 700,
+    "primary": 400
+  },
+  "layout": {
+    "maxWidth": 640
+  },
+  "padding": {
+    "btn": {
+      "top": 20,
+      "right": 24,
+      "bottom": 20,
+      "left": 24
+    }
+  },
+  "radius": {
+    "btn": 3
+  },
+  "spacing": {
+    "btn": 8,
+    "contentGutter": 24,
+    "sectionGap": 32
   }
 }
-
-async function saveVersion() {
-  editorRef.value?.editor?.saveDesign(async (design: any) => {
-    await api.post(`/templates/${t.id}/versions`, { design_json: design })
-  })
-}
-
-async function exportHtml() {
-  editorRef.value?.editor?.exportHtml(async ({ html }) => {
-    await api.post(`/templates/${t.id}/export`, { html })
-  })
-}
-</script>
-
-<template>
-  <div class="editor-shell">
-    <Toolbar
-      @save="saveVersion"
-      @export="exportHtml"
-      @openTemplates="openTemplatePicker"
-      @openMedia="openMedia"
-      @openBlocks="openBlocks"
-    />
-    <EmailEditor ref="editorRef" :options="editorOptions" @load="onLoad" />
-  </div>
-</template>
-```
-
-> Note: actual Unlayer methods may differ slightly; rely on the `dev-example.vue` instance methods available via `vue-email-editor`.
-
----
-
-## Task Breakdown & Sequence (Recommended)
-
-**Phase 0 — Repo & Local Env**
-
-1. Clone scaffolding (`vue-email-editor`) and confirm `dev-example.vue` runs.
-2. Add Pinia store, Axios wrapper, envs (`VITE_API_BASE`, `VITE_UNLAYER_PROJECT_ID`).
-3. Create basic Express API + Prisma; migrate DB schema.
-
-**Phase 1 — Persistence MVP**
-4. Implement `/templates` CRUD and `/templates/:id/versions` (save design JSON).
-5. Wire `saveDesign` and `loadDesign` in `dev-example.vue`.
-6. Implement autosave endpoint and throttle listener.
-
-**Phase 2 — Template Picker & Versioning**
-7. Build Template Picker modal; load latest version on select.
-8. Add version list & restore; implement Publish/Archive.
-
-**Phase 3 — Media & File Manager**
-9. Implement signed uploads + media listing endpoints.
-10. Build File Manager UI; override editor file-pick to return selected URL.
-
-**Phase 4 — Saved Blocks**
-11. API for user blocks (CRUD).
-12. UI for block library + insert into editor.
-
-**Phase 5 — Style Guide**
-13. Configure brand fonts/colors, default paddings, content width.
-14. Add pre-export validator (warn on off-brand tokens).
-
-**Phase 6 — Merge & Design Tags**
-15. Load and register merge tags; expose picker UI.
-16. Add Design Tags side panel and persistence.
-
-**Phase 7 — Export & QA**
-17. Export HTML endpoint; optional inline CSS; ESP lint.
-18. E2E tests (Cypress/Playwright) for create → edit → save → export flow.
-
-**Phase 8 — Hardening**
-19. AuthZ (role-based access), rate limits, audit logs.
-20. Backups, migrations, seed scripts, observability.
-
----
-
-## Implementation Notes (per Feature)
-
-### Template Picker
-
-* Server: paginate templates by owner/status; include `current_version_id` & version meta.
-* Client: searchable list, preview thumbnail (render HTML server-side once & screenshot optional).
-
-### File Manager & Custom Media Library
-
-* Use signed upload URLs to object storage; DB stores metadata + URL.
-* Image validation (mime, dims), size limits, per-user folders.
-* Selection returns absolute URL that the editor can embed.
-
-### User Saved Blocks
-
-* Store each block as JSON fragment compatible with Unlayer’s block structure.
-* Offer categories and preview thumbnails; insert by calling the editor’s add/merge API.
-
-### Style Guide
-
-* Centralize tokens (fonts, colors, spacings) in one config file.
-* Lock or hide non-approved tools/colors via editor options when possible.
-* Pre-export linter to detect rogue colors or non-approved fonts in `design_json`.
-
-### Merge Tags
-
-* Provide a curated list with labels and defaults (e.g., `user.first_name`, `hotel.name`).
-* Ensure the list syncs with your ESP/templating engine expectations.
-
-### Design Tags
-
-* Free-form key/value for analytics & downstream automation (e.g., `campaign_id`, `segment`).
-
-### User Template Updates
-
-* Autosave drafts; manual version bump on Save.
-* Show status (Draft/Published) and save indicator (saving / saved).
-
----
-
-## Security & Compliance
-
-* AuthN: JWT cookies (httpOnly, secure) or session.
-* AuthZ: Enforce ownership and roles on all endpoints.
-* Input validation: Zod/Valibot for request bodies.
-* Media: antivirus scan (ClamAV) if required; signed URLs with short TTL.
-* Audit trail for create/update/delete.
-* Rate limiting + CORS allow-list.
-
----
-
-## Testing Strategy
-
-* Unit: API handlers (templates, versions, media) with in-memory PG or test DB.
-* Integration: Save → Load → Export using a headless browser against the editor.
-* E2E: Cypress flows covering Template Picker, Media upload, Saved Blocks, Merge Tags insertion, Export.
-
----
-
-## Deliverables
-
-* Vue app with `vue-email-editor` integrated and all feature UIs.
-* Node/Express backend + Prisma schema & migrations.
-* Postgres SQL dump (baseline).
-* API docs (OpenAPI/Swagger) covering endpoints above.
-* Admin-only seed script with demo templates, merge tags, and media samples.
-* README with setup, env, and run instructions.
-
----
-
-## Resources Needed
-
-* Access to the `vue-email-editor` repo & `dev-example.vue`.
-* Unlayer account / Project ID (if required by advanced features).
-* Postgres instance & credentials.
-* S3-compatible storage (bucket, keys).
-* Domain for API (for CORS) and OAuth provider if SSO desired.
-* Brand tokens: fonts, colors, spacing, logo assets.
-
----
-
-## Environment Variables (example)
-
-```
-# Frontend (Vite)
-VITE_API_BASE=https://api.example.com
-VITE_UNLAYER_PROJECT_ID=xxxxxxxx
-
-# Backend
-DATABASE_URL=postgresql://rebelbot:pass@192.168.8.105:5432/email_db
-JWT_SECRET=supersecret
-S3_ENDPOINT=https://s3.example.com
-S3_BUCKET=emails-media
-S3_ACCESS_KEY=...
-S3_SECRET_KEY=...
-CORS_ORIGIN=https://app.example.com
 ```
 
 ---
 
-## Definition of Done
+## Database Schema (Finalized)
 
-* Users can: pick a template, edit, insert media via custom file manager, use saved blocks, apply style guide, insert merge/design tags, autosave, version, and export HTML.
-* All data persisted in Postgres; media stored and retrievable.
-* Tests green; docs complete; lint/format pass; CI pipeline in place.
+```sql
+-- templates
+id (uuid pk)
+org_id (uuid fk -> orgs)
+name (text)
+slug (text unique)
+status (text check in ['draft','published','archived'])
+current_draft_version_id (uuid fk -> versions null)
+current_published_version_id (uuid fk -> versions null)
+style_guide_id (uuid null)
+deleted_at (timestamp null)
+created_at, updated_at
+
+-- versions
+id (uuid pk)
+template_id (uuid fk -> templates)
+number (int)
+status (text check in ['DRAFT','PUBLISHED'])
+design_json (jsonb)
+html_compiled (text)
+renderer_name (text)
+renderer_ver (text)
+inliner_ver (text)
+created_by (uuid fk -> users)
+created_at (timestamp)
+published_at (timestamp)
+locked (boolean default false)
+
+-- media_assets
+id (uuid pk)
+org_id (uuid fk -> orgs)
+filename (text)
+content_type (text)
+byte_size (int)
+storage_key (text)
+public_url (text null)
+checksum (text)
+meta (jsonb)
+created_by (uuid fk -> users)
+created_at, updated_at, deleted_at
+unique (org_id, checksum)
+
+-- merge_tags
+id (uuid pk)
+org_id (uuid fk -> orgs)
+key (citext)
+label (text)
+default_value (text)
+system (boolean default false)
+created_at, updated_at
+unique (org_id, key)
+```
+
+### Schema Extensions & Advanced Tables
+
+- `organizations`, `org_members`, `template_collaborators` for multi-tenancy & permissions
+- `exports` table for multiple cached variants
+- `jobs` table for AV scans, thumbnails, heavy exports
+- `audit_logs` table for traceability
 
 ---
 
-## Open Questions (to resolve early)
+## Backend API (Contract)
 
-1. Do we enforce single org/tenant or multi-tenant?
-2. Which ESP downstream? (may affect merge tag syntax)
-3. Require SSO?
-4. Need email client compatibility (Litmus) in CI?
-5. Thumbnail generation for templates/blocks (serverless vs queue)?
+### Templates & Versions
+- `POST /api/templates`
+- `GET /api/templates`
+- `GET /api/templates/:id`
+- `PATCH /api/templates/:id`
+- `POST /api/templates/:id/versions`
+- `GET /api/templates/:id/versions`
+- `GET /api/versions/:versionId`
+- `POST /api/versions/:versionId`
+- `POST /api/versions/:versionId/publish`
+- `POST /api/versions/:versionId/render`
+- `POST /api/versions/:versionId/test-send`
+
+### Media
+- `GET /api/media`
+- `POST /api/media/sign`
+- `GET /api/media/:id/url`
+- `DELETE /api/media/:id`
+
+### API Additions
+- `POST /api/templates/:id/duplicate`
+- `GET /api/templates/:id/exports`
+- `GET /api/templates/:id/exports/:exportId`
+- `POST /api/media/scan/:id`
+- `GET /api/style-guide`
+- `POST /api/webhooks`, `GET /api/webhooks/events`
+
+---
+
+## DevOps / Platform Considerations
+
+- **CORS/CSP**: Allow Unlayer iframe domain; set `img-src`/`media-src` to CDN + `data:`.
+- **DB Pooling**: Use pgbouncer or node-pg pool.
+- **Migrations/Seeds**: Seed org, users, template, tags, media.
+- **Observability**: Include `request_id`, `user_id`, `org_id` in logs.
+- **Metrics**: saves/sec, exports latency, AV scan times.
+- **Backups**: Daily PG snapshots; media lifecycle rules (IA/Glacier).
+- **Secrets**: Only `.env.example`; never commit real credentials.
+
+---
+
+## Testing Plan
+
+- **Contract tests**: editor bridges (load/save/export, media select)
+- **Snapshot tests**: exported HTML (goldens)
+- **Security tests**: object-level auth across orgs
+- **E2E tests**: full flow — create → edit → autosave → publish → export
+
+---
+
+## Definition of Done (Checklist)
+
+- [ ] Multi-tenant model & collaborator permissions
+- [ ] Editor event hooks wired (dirty, autosave, export)
+- [ ] Style-guide tokens + linter + publish gate
+- [ ] Exports, jobs, audit_logs, template_collaborators tables
+- [ ] Draft vs published semantics clarified and implemented
+- [ ] File Manager override + AV scan + thumbnails + quotas
+- [ ] CSP/CORS, pooling, backups, metrics
+- [ ] Tight indexes & scoped uniqueness
+- [ ] Secrets only in `.env.example`
+
+---
+
+## Spec Addendum (Summary)
+
+- One draft and one published version per template.
+- Published versions are immutable.
+- Merge tags scoped per org.
+- Signed URLs are ephemeral and derived at read-time.
+- Compiled HTML cached for current published version.
+- Signed URL TTL default: 15 minutes.
+- Metrics: render latency, publish latency, error rates.
+
+## ⚙️ Local Development Notes
+
+* **Server Control:** When working on local development, please let me handle starting and stopping the dev server — manual restarts during active work can cause the agent to freeze or lose state.
+
+* **Port Consistency:** Keep the local dev server port fixed in `vite.config.ts` at:
+
+  ```ts
+  server: {
+    port: 9022
+  }
+  ```
+
+* **Network Flow / Reverse Proxy Setup:**
+  External requests from outside IPs follow this path:
+
+  ```
+  SSL :443 (External Request)
+        ↓
+  Reverse Proxy Server
+        ↓
+  Local Dev Server (192.168.8.137:9022)
+  ```
+
+This ensures stable connections during testing and remote access, while avoiding conflicts with the agent runtime.
 
 
-## POSTGRES CONNECTION CREDENTIALS
-
-** The Postgres Database is hosted on a local nework server. 
-It's NOT running on docker on this machine. 
-Connect using either of the option below, both contain the same 
-endpoint for the connection string to the network server at 192.168.8.105:5432 
-including the db user and password.
+## Issues
+- Review the AGENT_issues.md file for a list of current open issues.
+- Use this file as the source of truth for tracking bugs, feature gaps, tech debt, and pending decisions.
 
 
-Option 1
-DATABASE_URL="op://AI/PostgresSQL/connection string"
+## Resolved
+- When an issue listed in AGENT_issues.md is confirmed fixed or completed, move that exact line into AGENT_resolved.md.
+- Immediately below the original line, add the tag RESOLVED followed by the data and include a brief summary of the high-level steps taken to resolve it.
+- This ensures historical traceability and keeps the issues list clean while preserving context for future reference.
 
-Option 2
-CONNECTION_STRING="${DATABASE_URL}$""
+---
+
+## 🧰 Issue Template
+
+### Issue [#] | [MM-DD-YYYY]
+
+**Title:** [Short, descriptive title of the issue]
+
+**Description:**
+[Detailed description of the issue, how it was discovered, and any reproduction steps if relevant.]
+
+**Impact:**
+[What part of the system is affected and how it impacts users or workflows.]
+
+**Status:** Open
+**Priority:** [Low | Medium | High | Critical]
+**Owner:** [Team or individual responsible]
+**Reference:** [Optional: internal tracking ID, issue number, or ticket link]
+
+---
+
+### RESOLVED | [MM-DD-YYYY]
+
+**Resolution Summary:**
+[Brief explanation of the fix or solution implemented.]
+
+**Commit:** [Commit hash or link]
+**Linked PR:** [PR number or link]
+**Verified By:** [QA name or date]
+
+---
+
+## ✅ Examples — Real Issue
+
+### Issue 1 | 10-19-2025
+
+**Title:** Autosave fails silently when the editor tab loses focus.
+
+**Description:**
+Users reported that when the browser tab is backgrounded during editing, the `design:updated` event is not always triggered. As a result, autosave does not fire, leading to potential data loss if the tab is closed or refreshed before a manual save.
+
+**Impact:**
+
+* Draft data can be lost unexpectedly.
+* Increases user frustration and reduces trust in autosave reliability.
+
+**Status:** Open
+**Priority:** High
+**Owner:** Frontend Integration Team
+**Reference:** `editor_autosave_event_bug`
+
+---
+
+### RESOLVED | 10-25-2025
+
+**Resolution Summary:**
+✅ Added a visibility change listener to trigger a final autosave before the tab loses focus.
+✅ Implemented a fallback debounce timer to ensure autosave fires even if the event is skipped.
+✅ Added logging and metrics to monitor autosave failures in production.
+
+**Commit:** [`abc1234`](https://github.com/REVREBEL/email-editor/commit/abc1234)
+**Linked PR:** #42
+**Verified By:** QA on staging (10-24-2025)
+
+
+# AGENT Issues & Resolution Log
+
+This document is used to track current issues, their resolution status, and the steps taken once resolved.
+
+---
+
+## 🧰 Issue Template
+
+### Issue [#] | [MM-DD-YYYY]
+
+**Title:** [Short, descriptive title of the issue]
+
+**Description:**
+[Detailed description of the issue, how it was discovered, and any reproduction steps if relevant.]
+
+**Impact:**
+[What part of the system is affected and how it impacts users or workflows.]
+
+**Status:** Open
+**Priority:** [Low | Medium | High | Critical]
+**Owner:** [Team or individual responsible]
+**Reference:** [Optional: internal tracking ID, issue number, or ticket link]
+
+---
+
+### RESOLVED | [MM-DD-YYYY]
+
+**Resolution Summary:**
+[Brief explanation of the fix or solution implemented.]
+
+**Commit:** [Commit hash or link]
+**Linked PR:** [PR number or link]
+**Verified By:** [QA name or date]
+
+---
+
+## ✅ Example — Real Issue
+
+### Issue 1 | 10-19-2025
+
+**Title:** Autosave fails silently when the editor tab loses focus.
+
+**Description:**
+Users reported that when the browser tab is backgrounded during editing, the `design:updated` event is not always triggered. As a result, autosave does not fire, leading to potential data loss if the tab is closed or refreshed before a manual save.
+
+**Impact:**
+
+* Draft data can be lost unexpectedly.
+* Increases user frustration and reduces trust in autosave reliability.
+
+**Status:** Open
+**Priority:** High
+**Owner:** Frontend Integration Team
+**Reference:** `editor_autosave_event_bug`
+
+---
+
+### RESOLVED | 10-25-2025
+
+**Resolution Summary:**
+✅ Added a visibility change listener to trigger a final autosave before the tab loses focus.
+✅ Implemented a fallback debounce timer to ensure autosave fires even if the event is skipped.
+✅ Added logging and metrics to monitor autosave failures in production.
+
+**Commit:** [`abc1234`](https://github.com/REVREBEL/email-editor/commit/abc1234)
+**Linked PR:** #42
+**Verified By:** QA on staging (10-24-2025)
+
+---
+
+
