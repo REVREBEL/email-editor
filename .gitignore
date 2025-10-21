@@ -26,7 +26,7 @@ pnpm-debug.log*
 .pnpm-debug.log*
 /AGENTS.md/chat/
 GEMINI.MD/
-
+/AGENTS.md/unlayer-builder/
 # pnpm store (per-project) — pnpm keeps a global store elsewhere; this is just in case
 .pnpm-store/
 
