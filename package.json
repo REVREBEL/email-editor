@@ -49,6 +49,7 @@
 		"@prisma/client": "6.17.1",
 		"@vue/tsconfig": "^0.8.1",
 		"axios": "^1.12.2",
+		"pinia": "^3.0.3",
 		"unlayer-types": "latest",
 		"vue": "^3.2.0",
 		"zod": "^4.1.12"
