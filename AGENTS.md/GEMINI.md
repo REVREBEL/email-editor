@@ -79,7 +79,7 @@ if (!cloudflareKey || !postgresConnString) {
 
 ## POSTGRES CONNECTION CREDENTIALS
 
-** The Postgres Database is hosted on a local nework server. 
+** The Postgres Database is hosted on a local network server. 
 It's NOT running on docker on this machine. 
 Connect using either of the option below, both contain the same 
 endpoint for the connection string to the network server at 192.168.8.105:5432 
