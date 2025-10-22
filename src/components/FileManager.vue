@@ -8,7 +8,7 @@ const mediaAssets = ref<any[]>([]);
 const showModal = ref(false);
 
 const fetchMediaAssets = () => {
-  api.getMedia().then((response) => {
+  api.get('/media').then((response) => {
     mediaAssets.value = response.data;
   });
 };
@@ -18,14 +18,40 @@ const selectAsset = (asset: any) => {
   showModal.value = false;
 };
 
-const onFileChange = (e: any) => {
+const calculateChecksum = async (file: File) => {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+};
+
+const onFileChange = async (e: any) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  api.uploadMedia(file).then((response) => {
-    emit('select', response.data.url);
-    showModal.value = false;
+  const checksum = await calculateChecksum(file);
+
+  const response = await api.post('/media/sign', { filename: file.name, contentType: file.type });
+  const { signedUrl } = response.data;
+
+  await fetch(signedUrl, {
+    method: 'PUT',
+    body: file,
+    headers: {
+      'Content-Type': file.type,
+    },
   });
+
+  await api.post('/media', {
+    filename: file.name,
+    contentType: file.type,
+    byte_size: file.size,
+    storage_key: file.name, // This should be the key from the storage, but for now I will use the filename
+    checksum,
+  });
+
+  fetchMediaAssets();
 };
 
 onMounted(() => {

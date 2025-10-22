@@ -10,7 +10,7 @@ const newTagValue = ref('');
 
 const fetchTags = () => {
   if (props.template) {
-    api.getDesignTags(props.template.id).then((response) => {
+    api.get(`/templates/${props.template.id}/design-tags`).then((response) => {
       tags.value = response.data;
     });
   }
@@ -18,7 +18,7 @@ const fetchTags = () => {
 
 const addTag = () => {
   if (props.template && newTagKey.value && newTagValue.value) {
-    api.createDesignTag(props.template.id, { key: newTagKey.value, value: newTagValue.value }).then(() => {
+    api.post(`/templates/${props.template.id}/design-tags`, { key: newTagKey.value, value: newTagValue.value }).then(() => {
       fetchTags();
       newTagKey.value = '';
       newTagValue.value = '';

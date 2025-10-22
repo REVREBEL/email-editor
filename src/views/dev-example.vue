@@ -3,6 +3,8 @@ import { ref } from "vue";
 import EmailEditor from "../components/EmailEditor.vue";
 import api from "../services/api";
 import TemplatePicker from "../components/TemplatePicker.vue";
+import SavedBlocks from "../components/SavedBlocks.vue";
+import DesignTags from "../components/DesignTags.vue";
 import type {
   ChildComponentPublicMethods,
   SaveDesignCallback,
@@ -18,7 +20,7 @@ let autosaveTimeout: any = null;
 import { brandColors, brandFonts } from '../styles/brand';
 
 const options = {
-  projectId: 187691, // Using your project ID
+  projectId: import.meta.env.VITE_UNLAYER_PROJECT_ID, // Using your project ID
   locale: 'en',
   version: "latest",
   appearance: {
@@ -62,7 +64,7 @@ const options = {
 // called when the editor is created
 const editorLoaded = () => {
   emailEditor.value?.loadDesign({});
-  api.getMergeTags().then((response) => {
+  api.get('/merge-tags').then((response) => {
     emailEditor.value?.editor?.setMergeTags(response.data);
   });
 };
@@ -107,7 +109,7 @@ const autosave = () => {
 
   emailEditor.value?.saveDesign(
     (design: Parameters<SaveDesignCallback>[0]) => {
-      api.createTemplate({ templateId: currentTemplate.value.id, design }).catch((error) => {
+      api.post('/templates', { templateId: currentTemplate.value.id, design }).catch((error) => {
         console.error('Error autosaving:', error);
       });
     }
@@ -118,7 +120,7 @@ const saveDesign = () => {
   emailEditor.value?.saveDesign(
     (design: Parameters<SaveDesignCallback>[0]) => {
       console.log('Saving design...');
-      api.createTemplate({ name: 'Test Template', design }).then((response) => {
+      api.post('/templates', { name: 'Test Template', design }).then((response) => {
         alert(`Template saved with ID: ${response.data.id}`);
       }).catch((error) => {
         console.error('Error saving template:', error);
@@ -165,8 +167,14 @@ const linter = (design: any) => {
 
 const exportHtml = () => {
   emailEditor.value?.exportHtml((data: any) => {
+    const issues = linter(data.design);
+    if (issues.length > 0) {
+      alert(`Style guide violations found:\n${issues.join('\n')}`);
+      return;
+    }
+
     if (currentTemplate.value) {
-      api.exportHtml(currentTemplate.value.id, data.html).then(() => {
+      api.post(`/templates/${currentTemplate.value.id}/export`, { html: data.html }).then(() => {
         alert('HTML exported successfully!');
       });
     }
@@ -185,12 +193,16 @@ const exportHtml = () => {
         <button @click="exportHtml">Export HTML</button>
       </div>
 
-      <EmailEditor
-        ref="emailEditor"
-        @load="editorLoaded"
-        @ready="editorReady"
-        :options="options"
-      />
+      <div style="display: flex; height: 100%;">
+        <EmailEditor
+          ref="emailEditor"
+          @load="editorLoaded"
+          @ready="editorReady"
+          :options="options"
+        />
+        <SavedBlocks :editor="emailEditor?.editor" />
+        <DesignTags :template="currentTemplate" />
+      </div>
     </div>
   </div>
 </template>
