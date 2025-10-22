@@ -7,7 +7,7 @@ const props = defineProps<{ editor: any }>();
 const blocks = ref<any[]>([]);
 
 const fetchBlocks = () => {
-  api.getBlocks().then((response) => {
+  api.get('/blocks').then((response) => {
     blocks.value = response.data;
   });
 };
@@ -21,7 +21,7 @@ const saveBlock = () => {
     const name = prompt('Enter a name for the block:');
     if (!name) return;
 
-    api.createBlock({ name, category: 'General', block_json: block }).then(() => {
+    api.post('/blocks', { name, category: 'General', block_json: block }).then(() => {
       fetchBlocks();
     });
   });

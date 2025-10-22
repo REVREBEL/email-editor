@@ -11,13 +11,13 @@ const selectedTemplate = ref<any>(null);
 const versions = ref<any[]>([]);
 
 const fetchTemplates = () => {
-  api.getTemplates().then((response) => {
+  api.get('/templates').then((response) => {
     templates.value = response.data;
   });
 };
 
 const selectTemplate = (template: any) => {
-  api.getTemplate(template.id).then((response) => {
+  api.get(`/templates/${template.id}`).then((response) => {
     emit('select', response.data);
     showModal.value = false;
   });
@@ -25,14 +25,26 @@ const selectTemplate = (template: any) => {
 
 const showHistory = (template: any) => {
   selectedTemplate.value = template;
-  api.getVersions(template.id).then((response) => {
-    versions.value = response.data;
-  });
+  versions.value = template.versions;
 };
 
 const selectVersion = (version: any) => {
   emit('select', { ...selectedTemplate.value, design: version.design_json });
   showModal.value = false;
+};
+
+const publishTemplate = (template: any) => {
+  api.post(`/templates/${template.id}/publish`).then(() => {
+    alert('Template published successfully!');
+    fetchTemplates();
+  });
+};
+
+const archiveTemplate = (template: any) => {
+  api.post(`/templates/${template.id}/archive`).then(() => {
+    alert('Template archived successfully!');
+    fetchTemplates();
+  });
 };
 
 onMounted(() => {
@@ -53,6 +65,8 @@ onMounted(() => {
             <div>
               <button @click="selectTemplate(template)">Select</button>
               <button @click="showHistory(template)">History</button>
+              <button @click="publishTemplate(template)">Publish</button>
+              <button @click="archiveTemplate(template)">Archive</button>
             </div>
           </li>
         </ul>

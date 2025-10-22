@@ -6,12 +6,18 @@
   "scripts": {
     "start": "cross-env DATABASE_URL=\"postgresql://rebelbot:XA8T4CGyBsPipGae9CG@192.168.8.105:5432/email_db\" ts-node src/index.ts",
     "build": "tsc",
-    "serve": "node dist/index.js"
+    "serve": "node dist/index.js",
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/s3-client": "^3.614.0",
+    "@aws-sdk/s3-request-presigner": "^3.614.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "cors": "^2.8.5",
