@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@prisma/client':
-        specifier: 6.17.1
-        version: 6.17.1(typescript@5.9.2)
+        specifier: 6.18.0
+        version: 6.18.0(typescript@5.9.3)
       '@vue/tsconfig':
         specifier: ^0.8.1
         version: 0.8.1(typescript@5.9.2)(vue@3.5.22(typescript@5.9.2))
@@ -22,13 +22,13 @@ importers:
         version: 3.0.3(typescript@5.9.2)(vue@3.5.22(typescript@5.9.2))
       unlayer-types:
         specifier: latest
-        version: 1.314.0
+        version: 1.315.0
       vue:
         specifier: ^3.2.0
         version: 3.5.22(typescript@5.9.2)
       vue-router:
         specifier: ^4.0.0
-        version: 4.6.3(vue@3.5.22(typescript@5.9.2))
+        version: 4.6.3(vue@3.5.22(typescript@5.9.3))
       zod:
         specifier: ^4.1.12
         version: 4.1.12
@@ -40,7 +40,7 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       '@eslint/js':
-        specifier: ^9.38.0
+        specifier: ^9.36.0
         version: 9.38.0
       '@stylistic/eslint-plugin':
         specifier: ^5.4.0
@@ -61,7 +61,7 @@ importers:
         specifier: ^3.5.22
         version: 3.5.22
       eslint:
-        specifier: ^9.38.0
+        specifier: ^9.36.0
         version: 9.38.0
       eslint-config-prettier:
         specifier: ^10.1.8
@@ -386,8 +386,8 @@ packages:
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
-  '@prisma/client@6.17.1':
-    resolution: {integrity: sha512-zL58jbLzYamjnNnmNA51IOZdbk5ci03KviXCuB0Tydc9btH2kDWsi1pQm2VecviRTM7jGia0OPPkgpGnT3nKvw==}
+  '@prisma/client@6.18.0':
+    resolution: {integrity: sha512-jnL2I9gDnPnw4A+4h5SuNn8Gc+1mL1Z79U/3I9eE2gbxJG1oSA+62ByPW4xkeDgwE0fqMzzpAZ7IHxYnLZ4iQA==}
     engines: {node: '>=18.18'}
     peerDependencies:
       prisma: '*'
@@ -630,15 +630,6 @@ packages:
 
   '@vue/devtools-api@6.6.4':
     resolution: {integrity: sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==}
-
-  '@vue/devtools-api@7.7.7':
-    resolution: {integrity: sha512-lwOnNBH2e7x1fIIbVT7yF5D+YWhqELm55/4ZKf45R9T8r9dE2AIOy8HKjfqzGsoTHFbWbr337O4E0A0QADnjBg==}
-
-  '@vue/devtools-kit@7.7.7':
-    resolution: {integrity: sha512-wgoZtxcTta65cnZ1Q6MbAfePVFxfM+gq0saaeytoph7nEa7yMXoi6sCPy4ufO111B9msnw0VOWjPEFCXuAKRHA==}
-
-  '@vue/devtools-shared@7.7.7':
-    resolution: {integrity: sha512-+udSj47aRl5aKb0memBvcUG9koarqnxNM5yjuREvqwK6T3ap4mn3Zqqc17QrBFTqSMjr3HK1cvStEZpMDpfdyw==}
 
   '@vue/language-core@3.0.8':
     resolution: {integrity: sha512-eYs6PF7bxoPYvek9qxceo1BCwFbJZYqJll+WaYC8o8ec60exqj+n+QRGGiJHSeUfYp0hDxARbMdxMq/fbPgU5g==}
@@ -1825,8 +1816,8 @@ packages:
   undici-types@7.14.0:
     resolution: {integrity: sha512-QQiYxHuyZ9gQUIrmPo3IA+hUl4KYk8uSA7cHrcKd/l3p1OTpZcM0Tbp9x7FAtXdAYhlasd60ncPpgu6ihG6TOA==}
 
-  unlayer-types@1.314.0:
-    resolution: {integrity: sha512-8O218ohQUMCdGqXSfwQgU7aWJ124Ucax3M1hNOtkbRa7RZbC80KnvwivlLyGYVvukHQrw6C8FKUGHAkD4AORAw==}
+  unlayer-types@1.315.0:
+    resolution: {integrity: sha512-rFcT3H8/NE0g0uC4NoKp4aRJUURzj26+OxUVrX3o463ClinDhh2DnoNsFWxQFvDyqDynDSQ6rulpPeWIajA2ng==}
 
   unpipe@1.0.0:
     resolution: {integrity: sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ==}
@@ -2212,7 +2203,7 @@ snapshots:
 
   '@pkgr/core@0.2.9': {}
 
-  '@prisma/client@6.17.1(typescript@5.9.2)':
+  '@prisma/client@6.18.0(typescript@5.9.3)':
     optionalDependencies:
       typescript: 5.9.2
 
@@ -2464,25 +2455,7 @@ snapshots:
 
   '@vue/devtools-api@6.6.4': {}
 
-  '@vue/devtools-api@7.7.7':
-    dependencies:
-      '@vue/devtools-kit': 7.7.7
-
-  '@vue/devtools-kit@7.7.7':
-    dependencies:
-      '@vue/devtools-shared': 7.7.7
-      birpc: 2.6.1
-      hookable: 5.5.3
-      mitt: 3.0.1
-      perfect-debounce: 1.0.0
-      speakingurl: 14.0.1
-      superjson: 2.2.2
-
-  '@vue/devtools-shared@7.7.7':
-    dependencies:
-      rfdc: 1.4.1
-
-  '@vue/language-core@3.0.8(typescript@5.9.2)':
+  '@vue/language-core@3.0.8(typescript@5.9.3)':
     dependencies:
       '@volar/language-core': 2.4.23
       '@vue/compiler-dom': 3.5.22
@@ -3675,7 +3648,7 @@ snapshots:
 
   undici-types@7.14.0: {}
 
-  unlayer-types@1.314.0: {}
+  unlayer-types@1.315.0: {}
 
   unpipe@1.0.0: {}
 
@@ -3749,7 +3722,12 @@ snapshots:
       '@vue/devtools-api': 6.6.4
       vue: 3.5.22(typescript@5.9.2)
 
-  vue-tsc@3.0.8(typescript@5.9.2):
+  vue-router@4.6.3(vue@3.5.22(typescript@5.9.3)):
+    dependencies:
+      '@vue/devtools-api': 6.6.4
+      vue: 3.5.22(typescript@5.9.3)
+
+  vue-tsc@3.0.8(typescript@5.9.3):
     dependencies:
       '@volar/typescript': 2.4.23
       '@vue/language-core': 3.0.8(typescript@5.9.2)
