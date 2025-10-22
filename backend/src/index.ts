@@ -108,7 +108,11 @@ app.post('/api/templates', async (req, res) => {
     }
   } catch (error) {
     console.error('Error in POST /api/templates:', error);
-    res.status(500).json({ error: (error as any).message });
+    const errorMessage =
+      typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string'
+        ? (error as any).message
+        : 'An unexpected error occurred.';
+    res.status(500).json({ error: errorMessage });
   }
 });
 

@@ -334,10 +334,34 @@ unique (org_id, key)
 
 ## Backend API (Contract)
 
-**Auth**
+### Templates & Versions
+- `POST /api/templates`
+- `GET /api/templates`
+- `GET /api/templates/:id`
+- `PATCH /api/templates/:id`
+- `POST /api/templates/:id/versions`
+- `GET /api/templates/:id/versions`
+- `GET /api/versions/:versionId`
+- `POST /api/versions/:versionId`
+- `POST /api/versions/:versionId/publish`
+- `POST /api/versions/:versionId/render`
+- `POST /api/versions/:versionId/test-send`
 
-* `POST /api/auth/login` → { token }
-* `GET /api/auth/me`
+### Media
+- `GET /api/media`
+- `POST /api/media/sign`
+- `GET /api/media/:id/url`
+- `DELETE /api/media/:id`
+
+### API Additions
+- `POST /api/templates/:id/duplicate`
+- `GET /api/templates/:id/exports`
+- `GET /api/templates/:id/exports/:exportId`
+- `POST /api/media/scan/:id`
+- `GET /api/style-guide`
+- `POST /api/webhooks`, `GET /api/webhooks/events`
+
+---
 
 ### Templates & Versions
 - `POST /api/templates`
@@ -352,11 +376,9 @@ unique (org_id, key)
 - `POST /api/versions/:versionId/render`
 - `POST /api/versions/:versionId/test-send`
 
-**Saved Blocks**
+---
 
-* `GET /api/blocks?owner=:id`
-* `POST /api/blocks` { name, category, block_json }
-* `DELETE /api/blocks/:id`
+## Testing Plan
 
 ### Media
 - `GET /api/media`
@@ -375,9 +397,15 @@ unique (org_id, key)
 ### Tags Additions
 **Tags**
 
-* `GET /api/merge-tags` → [{ key, label, default }]
-* `GET /api/templates/:id/design-tags` → key/value list
-* `POST /api/templates/:id/design-tags` { key, value }
+- [ ] Multi-tenant model & collaborator permissions
+- [ ] Editor event hooks wired (dirty, autosave, export)
+- [ ] Style-guide tokens + linter + publish gate
+- [ ] Exports, jobs, audit_logs, template_collaborators tables
+- [ ] Draft vs published semantics clarified and implemented
+- [ ] File Manager override + AV scan + thumbnails + quotas
+- [ ] CSP/CORS, pooling, backups, metrics
+- [ ] Tight indexes & scoped uniqueness
+- [ ] Secrets only in `.env.example`
 
 ---
 
@@ -811,165 +839,100 @@ unlayer.init({
    * Implement `onLoad` to set config, load initial design if `template.current_version` exists.
    * Expose `saveDesign`, `exportHtml`, `loadDesign` via methods bound to UI buttons.
 
-2. **Editor Options (enable features)**
+- One draft and one published version per template.
+- Published versions are immutable.
+- Merge tags scoped per org.
+- Signed URLs are ephemeral and derived at read-time.
+- Compiled HTML cached for current published version.
+- Signed URL TTL default: 15 minutes.
+- Metrics: render latency, publish latency, error rates.
 
-   * **Template Picker**: wrapper UI modal lists `/api/templates`; on select → `editor.loadDesign` with chosen version.
-   * **File Manager / Custom Media Library**: provide a custom picker that lists `/api/media`, supports upload via `/api/media/sign`, and returns selected file URL to the editor (see *Asset Picker Hook* below).
-   * **User Saved Blocks**: implement UI to insert blocks from `/api/blocks`; use Unlayer `editor.addModule` or `editor.loadDesign` fragment merge (see *Blocks Hook* below).
-   * **Style Guide**: pass base styles via editor `appearance` + enforceable tokens (colors, fonts). Provide a read-only panel describing brand rules; optional lint on export.
-   * **Merge Tags**: load from `/api/merge-tags` and register with editor (see *Merge/Design Tags* below).
-   * **Design Tags**: bind key/value to template context; expose small form to edit; persist via `/api/templates/:id/design-tags`.
-   * **User Template Updates**: when editing, autosave to `design_versions` (new draft version) every N seconds or on change events.
+## ⚙️ Local Development Notes
 
-3. **Autosave & Versioning**
+* **Server Control:** When working on local development, please let me handle starting and stopping the dev server — manual restarts during active work can cause the agent to freeze or lose state.
 
-   * Throttle change listener (e.g., 5–10s). On trigger → `editor.saveDesign` → POST `/api/templates/:id/autosave`.
-   * Manual **Save New Version** button → POST `/api/templates/:id/versions` to bump `version` and set `current_version_id`.
+* **Port Consistency:** Keep the local dev server port fixed in `vite.config.ts` at:
 
-4. **Export Pipeline**
-
-   * `Export HTML` button → `editor.exportHtml(cb)` then POST to `/api/templates/:id/versions/:v/export` to cache.
-   * Optional: inline CSS and validate HTML (ESP compatibility).
-
-5. **Asset Picker Hook (Images/Files)**
-
-   * Provide a custom picker callable from the editor’s image/file selection UI (custom toolbar button or override file-select handler). The picker should:
-
-     * List folders/files
-     * Upload via signed URL
-     * Return a selected asset URL back to the editor callback
-
-6. **Blocks Hook (Saved Blocks)**
-
-   * Allow selecting a saved block, then insert into design using editor API to add content at cursor or append to body. Provide preview thumbnails.
-
-7. **Merge/Design Tags Integration**
-
-   * Register merge tags with the editor so users can insert tokens like `{{ user.first_name }}`.
-   * Expose Design Tags (e.g., `campaign_id`, `audience`) in a side panel and persist to DB.
-
-8. **Style Guide Enforcement**
-
-   * Configure `appearance` defaults: brand colors, font stacks, container widths, button radii.
-   * Optionally add a pre-export check to warn if non-approved colors/fonts are detected in `design_json`.
-
-9. **Template Picker**
-
-   * Modal with search/sort (owner, updated_at, status). Selecting a template loads its latest version; provide “Duplicate” to fork.
-
-10. **File Manager**
-
-* Tree view for folders; grid for files; drag-drop upload; server-side pagination.
-
----
-
-## Example Vue Pseudocode (Key Spots)
-
-```ts
-// dev-example.vue (sketch)
-
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import EmailEditor from 'vue-email-editor'
-import { useSession } from '@/stores/session'
-import { api } from '@/lib/api'
-
-const editorRef = ref<any>(null)
-const editorOptions = ref({
-  projectId: import.meta.env.VITE_UNLAYER_PROJECT_ID, // if needed
-  appearance: {
-    theme: 'dark',
-    panels: { tools: { dock: 'left' } },
-    fonts: { defaultFont: 'Inter' },
-    colors: ['#163666','#B2D3DE','#0b1320','#e8eef6']
-  },
-  mergeTags: [], // load in onLoad
-})
-
-function onLoad() {
-  // Load merge tags
-  api.get('/merge-tags').then(tags => {
-    editorRef.value?.editor?.setMergeTags?.(tags)
-  })
-
-  // Load selected template design
-  const t = /* from route/store */
-  if (t?.current_version) {
-    editorRef.value?.editor?.loadDesign(t.current_version.design_json)
+  ```ts
+  server: {
+    port: 9022
   }
-}
+  ```
 
-async function saveVersion() {
-  editorRef.value?.editor?.saveDesign(async (design: any) => {
-    await api.post(`/templates/${t.id}/versions`, { design_json: design })
-  })
-}
+* **Network Flow / Reverse Proxy Setup:**
+  External requests from outside IPs follow this path:
 
-async function exportHtml() {
-  editorRef.value?.editor?.exportHtml(async ({ html }) => {
-    await api.post(`/templates/${t.id}/export`, { html })
-  })
-}
-</script>
+  ```
+  SSL :443 (External Request)
+        ↓
+  Reverse Proxy Server
+        ↓
+  Local Dev Server (192.168.8.137:9022)
+  ```
 
-<template>
-  <div class="editor-shell">
-    <Toolbar
-      @save="saveVersion"
-      @export="exportHtml"
-      @openTemplates="openTemplatePicker"
-      @openMedia="openMedia"
-      @openBlocks="openBlocks"
-    />
-    <EmailEditor ref="editorRef" :options="editorOptions" @load="onLoad" />
-  </div>
-</template>
-```
+This ensures stable connections during testing and remote access, while avoiding conflicts with the agent runtime.
 
-> Note: actual Unlayer methods may differ slightly; rely on the `dev-example.vue` instance methods available via `vue-email-editor`.
+
+## Issues
+- Review the AGENT_issues.md file for a list of current open issues.
+- Use this file as the source of truth for tracking bugs, feature gaps, tech debt, and pending decisions.
+
+
+## Resolved
+- When an issue listed in AGENT_issues.md is confirmed fixed or completed, move that exact line into AGENT_resolved.md.
+- Immediately below the original line, add the tag RESOLVED followed by the data and include a brief summary of the high-level steps taken to resolve it.
+- This ensures historical traceability and keeps the issues list clean while preserving context for future reference.
 
 ---
 
-## Task Breakdown & Sequence (Recommended)
+## 🧰 Issue Template
 
-**Phase 0 — Repo & Local Env**
+### Issue [#] | [MM-DD-YYYY]
 
-1. Clone scaffolding (`vue-email-editor`) and confirm `dev-example.vue` runs.
-2. Add Pinia store, Axios wrapper, envs (`VITE_API_BASE`, `VITE_UNLAYER_PROJECT_ID`).
-3. Create basic Express API + Prisma; migrate DB schema.
+**Title:** [Short, descriptive title of the issue]
 
-**Phase 1 — Persistence MVP**
-4. Implement `/templates` CRUD and `/templates/:id/versions` (save design JSON).
-5. Wire `saveDesign` and `loadDesign` in `dev-example.vue`.
-6. Implement autosave endpoint and throttle listener.
+**Description:**
+[Detailed description of the issue, how it was discovered, and any reproduction steps if relevant.]
 
-**Phase 2 — Template Picker & Versioning**
-7. Build Template Picker modal; load latest version on select.
-8. Add version list & restore; implement Publish/Archive.
+**Impact:**
+[What part of the system is affected and how it impacts users or workflows.]
 
-**Phase 3 — Media & File Manager**
-9. Implement signed uploads + media listing endpoints.
-10. Build File Manager UI; override editor file-pick to return selected URL.
+**Status:** Open
+**Priority:** [Low | Medium | High | Critical]
+**Owner:** [Team or individual responsible]
+**Reference:** [Optional: internal tracking ID, issue number, or ticket link]
 
-**Phase 4 — Saved Blocks**
-11. API for user blocks (CRUD).
-12. UI for block library + insert into editor.
+---
 
-**Phase 5 — Style Guide**
-13. Configure brand fonts/colors, default paddings, content width.
-14. Add pre-export validator (warn on off-brand tokens).
+### RESOLVED | [MM-DD-YYYY]
 
-**Phase 6 — Merge & Design Tags**
-15. Load and register merge tags; expose picker UI.
-16. Add Design Tags side panel and persistence.
+**Resolution Summary:**
+[Brief explanation of the fix or solution implemented.]
 
-**Phase 7 — Export & QA**
-17. Export HTML endpoint; optional inline CSS; ESP lint.
-18. E2E tests (Cypress/Playwright) for create → edit → save → export flow.
+**Commit:** [Commit hash or link]
+**Linked PR:** [PR number or link]
+**Verified By:** [QA name or date]
 
-**Phase 8 — Hardening**
-19. AuthZ (role-based access), rate limits, audit logs.
-20. Backups, migrations, seed scripts, observability.
+---
+
+## ✅ Examples — Real Issue
+
+### Issue 1 | 10-19-2025
+
+**Title:** Autosave fails silently when the editor tab loses focus.
+
+**Description:**
+Users reported that when the browser tab is backgrounded during editing, the `design:updated` event is not always triggered. As a result, autosave does not fire, leading to potential data loss if the tab is closed or refreshed before a manual save.
+
+**Impact:**
+
+* Draft data can be lost unexpectedly.
+* Increases user frustration and reduces trust in autosave reliability.
+
+**Status:** Open
+**Priority:** High
+**Owner:** Frontend Integration Team
+**Reference:** `editor_autosave_event_bug`
 
 ---
 
