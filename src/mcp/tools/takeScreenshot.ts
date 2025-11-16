@@ -8,7 +8,7 @@ interface ScreenShareOverlay {
 }
 
 export const takeScreenshot: McpTool = {
-  name: 'takeScreenshot',
+  name: 'take-screenshot',
   description: 'Capture a screenshot from the active page and return it as an image',
   // Reuse the package’s component so ctx.component has the right runtime object
   component: base.component,

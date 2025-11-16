@@ -2,7 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
-import path from 'path';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -24,20 +28,20 @@ app.post('/api/templates', async (req, res) => {
   try {
     const { name, design, templateId } = req.body;
 
-    let user = await prisma.user.findUnique({ where: { id: 'clztimlq800007isj5mqna18b' } });
+    let user = await prisma.user.findUnique({ where: { id: process.env.DUMMY_USER_ID! } });
     if (!user) {
       console.log('User not found, creating new user');
       user = await prisma.user.create({
-        data: { id: 'clztimlq800007isj5mqna18b' },
+        data: { id: process.env.DUMMY_USER_ID! },
       });
       console.log('New user created:', user);
     }
 
-    let org = await prisma.organization.findUnique({ where: { id: 'clztimw2c00017isj34j6byr3' } });
+    let org = await prisma.organization.findUnique({ where: { id: process.env.DUMMY_ORG_ID! } });
     if (!org) {
       console.log('Organization not found, creating new organization');
       org = await prisma.organization.create({
-        data: { id: 'clztimw2c00017isj34j6byr3' },
+        data: { id: process.env.DUMMY_ORG_ID! },
       });
       console.log('New organization created:', org);
     }
@@ -84,7 +88,7 @@ app.post('/api/templates', async (req, res) => {
         data: {
           name: name || 'Untitled',
           orgId: org.id,
-          slug: name?.toLowerCase().replace(/ /g, '-') || 'untitled',
+          slug: await generateUniqueSlug(name || 'Untitled', org.id),
           status: 'draft',
           versions: {
             create: {
@@ -108,6 +112,9 @@ app.post('/api/templates', async (req, res) => {
     }
   } catch (error) {
     console.error('Error in POST /api/templates:', error);
+    if (error.code === 'P2002') {
+      return res.status(409).json({ error: 'A template with this name already exists.' });
+    }
     const errorMessage =
       typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string'
         ? (error as any).message
@@ -115,6 +122,30 @@ app.post('/api/templates', async (req, res) => {
     res.status(500).json({ error: errorMessage });
   }
 });
+
+async function generateUniqueSlug(name: string, orgId: string): Promise<string> {
+  // Basic slugification: lowercase, remove special chars, replace spaces/hyphens, trim
+  let baseSlug = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '') // remove special chars
+    .replace(/\s+/g, '-')         // replace spaces with hyphens
+    .replace(/-+/g, '-')          // collapse multiple hyphens
+    || 'untitled';
+
+  let slug = baseSlug;
+  let suffix = 1;
+
+  // Check for uniqueness within the org
+  while (
+    await prisma.template.findFirst({
+      where: { slug, orgId }
+    })
+  ) {
+    slug = `${baseSlug}-${suffix++}`;
+  }
+  return slug;
+}
 
 app.get('/api/templates', async (req, res) => {
   const templates = await prisma.template.findMany({ include: { versions: { orderBy: { number: 'desc' } } } });
@@ -158,12 +189,12 @@ app.get('/api/templates/:id', async (req, res) => {
   }
 });
 
-import { S3Client, PutObjectCommand } from '@aws-sdk/s3-client';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 app.post('/api/media/sign', async (req, res) => {
   try {
-    const { filename, contentType } = req.body;
+    const { filename, contentType, storage_key } = req.body;
 
     const s3Client = new S3Client({
       region: 'auto',
@@ -176,7 +207,7 @@ app.post('/api/media/sign', async (req, res) => {
 
     const command = new PutObjectCommand({
       Bucket: process.env.S3_BUCKET || '',
-      Key: filename,
+      Key: storage_key || filename,
       ContentType: contentType,
     });
 
@@ -238,12 +269,10 @@ app.delete('/api/blocks/:id', async (req, res) => {
 
 app.post('/api/blocks', async (req, res) => {
   try {
-    const { name, category, block_json } = req.body;
-
-    let user = await prisma.user.findUnique({ where: { id: 'clztimlq800007isj5mqna18b' } });
+    let user = await prisma.user.findUnique({ where: { id: process.env.DUMMY_USER_ID! } });
     if (!user) {
       user = await prisma.user.create({
-        data: { id: 'clztimlq800007isj5mqna18b' },
+        data: { id: process.env.DUMMY_USER_ID! },
       });
     }
 
@@ -277,17 +306,17 @@ app.post('/api/media', async (req, res) => {
   try {
     const { filename, contentType, byte_size, storage_key, checksum } = req.body;
 
-    let user = await prisma.user.findUnique({ where: { id: 'clztimlq800007isj5mqna18b' } });
+    let user = await prisma.user.findUnique({ where: { id: process.env.DUMMY_USER_ID! } });
     if (!user) {
       user = await prisma.user.create({
-        data: { id: 'clztimlq800007isj5mqna18b' },
+        data: { id: process.env.DUMMY_USER_ID! },
       });
     }
 
-    let org = await prisma.organization.findUnique({ where: { id: 'clztimw2c00017isj34j6byr3' } });
+    let org = await prisma.organization.findUnique({ where: { id: process.env.DUMMY_ORG_ID! } });
     if (!org) {
       org = await prisma.organization.create({
-        data: { id: 'clztimw2c00017isj34j6byr3' },
+        data: { id: process.env.DUMMY_ORG_ID! },
       });
     }
 

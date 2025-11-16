@@ -4,7 +4,7 @@
   "type": "module",
   "version": "0.1.0",
   "scripts": {
-    "start": "cross-env DATABASE_URL=\"postgresql://rebelbot:XA8T4CGyBsPipGae9CG@192.168.8.105:5432/email_db\" ts-node src/index.ts",
+    "start": "cross-env DATABASE_URL=\"postgresql://rebelbot:XA8T4CGyBsPipGae9CG@192.168.8.105:5432/email_db\" npx tsx src/index.ts",
     "build": "tsc",
     "serve": "node dist/index.js",
     "seed": "ts-node prisma/seed.ts"
@@ -13,14 +13,16 @@
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
-    "@aws-sdk/s3-client": "^3.614.0",
+    "@aws-sdk/client-s3": "^3.614.0",
     "@aws-sdk/s3-request-presigner": "^3.614.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "tsx": "^4.16.0",
     "typescript": "^5.6.3"
   }

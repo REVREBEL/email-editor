@@ -14,7 +14,7 @@ const fetchMediaAssets = () => {
 };
 
 const selectAsset = (asset: any) => {
-  emit('select', asset.url);
+  emit('select', asset.public_url);
   showModal.value = false;
 };
 
@@ -26,18 +26,19 @@ const calculateChecksum = async (file: File) => {
   return hashHex;
 };
 
+import { v4 as uuidv4 } from 'uuid';
+
 const onFileChange = async (e: any) => {
   const file = e.target.files[0];
   if (!file) return;
 
   const checksum = await calculateChecksum(file);
+  const storage_key = uuidv4();
 
-  const response = await api.post('/media/sign', { filename: file.name, contentType: file.type });
+  const response = await api.post('/media/sign', { filename: file.name, contentType: file.type, storage_key });
   const { signedUrl } = response.data;
 
-  await fetch(signedUrl, {
-    method: 'PUT',
-    body: file,
+  await api.put(signedUrl, file, {
     headers: {
       'Content-Type': file.type,
     },
@@ -47,7 +48,7 @@ const onFileChange = async (e: any) => {
     filename: file.name,
     contentType: file.type,
     byte_size: file.size,
-    storage_key: file.name, // This should be the key from the storage, but for now I will use the filename
+    storage_key,
     checksum,
   });
 
@@ -73,7 +74,7 @@ defineExpose({
         <input type="file" @change="onFileChange" />
         <ul>
           <li v-for="asset in mediaAssets" :key="asset.id">
-            <img :src="asset.url" width="100" />
+            <img :src="asset.public_url" width="100" />
             <button @click="selectAsset(asset)">Select</button>
           </li>
         </ul>
