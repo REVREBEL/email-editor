@@ -78,7 +78,7 @@
 		"prettier": "^3.6.2",
 		"rimraf": "^6.0.1",
 		"typescript": "^5.9.2",
-		"vite": "^7.1.7",
+		"vite": "^7.3.3",
 		"vite-plugin-mcp-client-tools": "^1.0.3",
 		"vue-dts-gen": "^0.3.0",
 		"vue-eslint-parser": "^10.2.0",
