@@ -48,7 +48,7 @@
 	"dependencies": {
 		"@prisma/client": "6.18.0",
 		"@vue/tsconfig": "^0.8.1",
-		"axios": "^1.12.2",
+		"axios": "^1.16.1",
 		"pinia": "^3.0.3",
 		"unlayer-types": "latest",
 		"vue": "^3.2.0",
