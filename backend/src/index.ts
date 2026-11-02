@@ -28,20 +28,20 @@ app.post('/api/templates', async (req, res) => {
   try {
     const { name, design, templateId } = req.body;
 
-    let user = await prisma.user.findUnique({ where: { id: process.env.DUMMY_USER_ID! } });
+    let user = await prisma.user.findUnique({ where: { id: process.env.USER_ID! } });
     if (!user) {
       console.log('User not found, creating new user');
       user = await prisma.user.create({
-        data: { id: process.env.DUMMY_USER_ID! },
+        data: { id: process.env.USER_ID! },
       });
       console.log('New user created:', user);
     }
 
-    let org = await prisma.organization.findUnique({ where: { id: process.env.DUMMY_ORG_ID! } });
+    let org = await prisma.organization.findUnique({ where: { id: process.env.ORG_ID! } });
     if (!org) {
       console.log('Organization not found, creating new organization');
       org = await prisma.organization.create({
-        data: { id: process.env.DUMMY_ORG_ID! },
+        data: { id: process.env.ORG_ID! },
       });
       console.log('New organization created:', org);
     }
@@ -269,10 +269,10 @@ app.delete('/api/blocks/:id', async (req, res) => {
 
 app.post('/api/blocks', async (req, res) => {
   try {
-    let user = await prisma.user.findUnique({ where: { id: process.env.DUMMY_USER_ID! } });
+    let user = await prisma.user.findUnique({ where: { id: process.env.USER_ID! } });
     if (!user) {
       user = await prisma.user.create({
-        data: { id: process.env.DUMMY_USER_ID! },
+        data: { id: process.env.USER_ID! },
       });
     }
 
@@ -306,17 +306,17 @@ app.post('/api/media', async (req, res) => {
   try {
     const { filename, contentType, byte_size, storage_key, checksum } = req.body;
 
-    let user = await prisma.user.findUnique({ where: { id: process.env.DUMMY_USER_ID! } });
+    let user = await prisma.user.findUnique({ where: { id: process.env.USER_ID! } });
     if (!user) {
       user = await prisma.user.create({
-        data: { id: process.env.DUMMY_USER_ID! },
+        data: { id: process.env.USER_ID! },
       });
     }
 
-    let org = await prisma.organization.findUnique({ where: { id: process.env.DUMMY_ORG_ID! } });
+    let org = await prisma.organization.findUnique({ where: { id: process.env.ORG_ID! } });
     if (!org) {
       org = await prisma.organization.create({
-        data: { id: process.env.DUMMY_ORG_ID! },
+        data: { id: process.env.ORG_ID! },
       });
     }
 
