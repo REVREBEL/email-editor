@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import EmailEditor from "../components/EmailEditor.vue";
 import api from "../services/api";
 import TemplatePicker from "../components/TemplatePicker.vue";
@@ -17,12 +17,15 @@ const fileManager = ref<any>(null);
 const currentTemplate = ref<any>(null);
 let autosaveTimeout: any = null;
 
+const displayMode = ref('email');
+
 import { brandColors, brandFonts } from '../styles/brand';
 
-const options = {
+const options = computed(() => ({
   projectId: import.meta.env.VITE_UNLAYER_PROJECT_ID, // Using your project ID
   locale: 'en',
   version: "latest",
+  displayMode: displayMode.value,
   appearance: {
     name: 'REVREBEL',
     theme: "modern_light",
@@ -37,6 +40,9 @@ const options = {
     },
   },
   features: {
+    headersAndFooters: true,
+    pageAnchors: true,
+    blocks: true,
     colorPicker: {
       presets: Object.values(brandColors),
     },
@@ -59,6 +65,10 @@ const options = {
       },
     ],
   },
+}));
+
+const setDisplayMode = (mode: string) => {
+  displayMode.value = mode;
 };
 
 // called when the editor is created
@@ -75,7 +85,7 @@ let imageCallback: any = null;
 const editorReady = () => {
   console.log("editorReady");
 
-  const iframe = document.querySelector('#example iframe');
+  const iframe = document.querySelector('#example iframe') as HTMLIFrameElement;
   if (iframe) {
     iframe.contentWindow?.document.addEventListener('drop', (event) => {
       const block = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}');
@@ -188,6 +198,10 @@ const exportHtml = () => {
       <div id="bar">
         <h1>REBEL Editor</h1>
 
+        <button @click="setDisplayMode('email')">Email</button>
+        <button @click="setDisplayMode('document')">Document</button>
+        <button @click="setDisplayMode('web')">Web</button>
+
         <button @click="saveDesign">Save Design</button>
         <TemplatePicker @select="onTemplateSelect" />
         <button @click="exportHtml">Export HTML</button>
@@ -195,13 +209,16 @@ const exportHtml = () => {
 
       <div style="display: flex; height: 100%;">
         <EmailEditor
+          :key="displayMode"
           ref="emailEditor"
           @load="editorLoaded"
           @ready="editorReady"
           :options="options"
         />
-        <SavedBlocks :editor="emailEditor?.editor" />
-        <DesignTags :template="currentTemplate" />
+        <div style="display: flex; flex-direction: column;">
+          <SavedBlocks v-if="emailEditor?.editor" :editor="emailEditor?.editor" />
+          <DesignTags v-if="currentTemplate" :template="currentTemplate" />
+        </div>
       </div>
     </div>
   </div>
@@ -211,7 +228,7 @@ const exportHtml = () => {
 .unlayer-editor {
   width: 100%;
 }
-</style>
+
 html,
 body {
   margin: 0;

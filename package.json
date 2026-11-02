@@ -51,6 +51,7 @@
 		"axios": "^1.12.2",
 		"pinia": "^3.0.3",
 		"unlayer-types": "latest",
+		"uuid": "^13.0.0",
 		"vue": "^3.2.0",
 		"zod": "^4.1.12"
 	},
@@ -63,6 +64,7 @@
 		"@eslint/eslintrc": "^3.3.1",
 		"@eslint/js": "^9.36.0",
 		"@stylistic/eslint-plugin": "^5.4.0",
+		"@types/uuid": "^11.0.0",
 		"@typescript-eslint/eslint-plugin": "^8.44.1",
 		"@typescript-eslint/parser": "^8.44.1",
 		"@vitejs/plugin-basic-ssl": "^2.1.0",

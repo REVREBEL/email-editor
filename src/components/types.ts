@@ -15,6 +15,9 @@ export interface UnlayerEditor {
   saveDesign: (callback: SaveDesignCallback) => void;
   loadDesign: (design: Design) => void;
   addEventListener: (event: string, callback: () => void) => void;
+  registerCallback: (event: string, callback: (...args: any[]) => void) => void;
+  addBlock: (block: any) => void;
+  setMergeTags: (mergeTags: any[]) => void;
 }
 
 // This is the type that the parent component will see.

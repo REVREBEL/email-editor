@@ -4,11 +4,16 @@
       <div id="bar">
         <h1>REBEL EDITOR</h1>
 
+        <button @click="setDisplayMode('email')">Email</button>
+        <button @click="setDisplayMode('document')">Document</button>
+        <button @click="setDisplayMode('web')">Web</button>
+
         <button @click="saveDesign">Save Design</button>
         <button @click="exportHtml">Export HTML</button>
       </div>
 
       <EmailEditor
+        :key="displayMode"
         ref="emailEditor"
         @load="editorLoaded"
         @ready="editorReady"
@@ -23,168 +28,90 @@
  
 <script setup lang="ts">
 
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import "revrebel-fonts/rebel-fonts.css";
 import EmailEditor from "../components/EmailEditor.vue";
-import { getLatestDesign, saveDesign as saveDesignApi } from "../services/api";
-import sample from "../data/sample.json";
+import api from "../services/api";
 import type {
   ChildComponentPublicMethods,
   SaveDesignCallback,
   ExportHtmlCallback,
-} from "../components/types";
+} from "@/components/types";
+import { brandColors, brandFonts } from '../styles/brand';
+import sample from '../data/sample.json';
 
-  const emailEditor = ref<ChildComponentPublicMethods | null>(null);
+const emailEditor = ref<ChildComponentPublicMethods | null>(null);
+const displayMode = ref('email');
 
-  const options = {
-      projectId: 187691, // Using your project ID
-      locale: 'en',
-    safe: true,
-      version: "latest",
-      displayMode: 'email',
-      devices: ['desktop', 'mobile'],
-      appearance: {
-        name: 'revrebel',
-          theme: "modern_light",
-          isClassic: false,
-          //////////////////////*************************************** */
-          panels: {
-            tools: {
-              dock: 'right',
-            },
-          },
-          loader: {
-            url: 'https://res.cloudinary.com/revrebel/image/upload/v1758990562/RR/Favicon/revrebel_256_fgsrow.ico',
-          },
-        },
-      features: {
-        styleGuide: true,
-        headersAndFooters: true,
-        blocks: true,
-        svgImageUpload: true,
-      //|||||||||||||||||||||||||||
-        // Color Picker
-        colorPicker: {
-          presets: [
-            '#163666',
-            '#047c97',
-            '#00a6b6',
-            '#71c9c5',
-            '#B2D3dE',
-            '#faca78',
-            '#f37d59',
-            '#e05047',
-            '#8e456a',
-            '#fafafa',
-            '#575757',
-            '#2E2E2E',
-          ],
-          colors: [
-            {
-              id: 'blue_shades',
-              label: 'Blue Shades',
-              colors: [
-                '#496999',
-                '#3e5f92',
-                '#33568c',
-                '#274c85',
-                '#1c437f',
-                '#1b4079',
-                '#193c72',
-                '#18396c',
-                '#163666',
-              ],
-            },
-          ],
-        },
-        //|||||||||||||||||||||||||||
-        textEditor: {
-        //|||||||||||||||||||||||||||
-          spellChecker: true,
-          tables: true,
-          inlineFontControls: true,
-
-          customButtons: [
-            {
-              name: 'my_button',
-              text: 'My Button',
-              icon: 'bookmark',
-              onSetup: () => {},
-              onAction: (data: { text: string }, callback: (text: string) => void) => { console.log(data.text); callback(data.text + ' Updated'); },
-            },
-            {
-              name: 'my_svg_button',
-              text: 'My SVG Button',
-              icon: '<svg />', // Insert your custom SVG here
-              onSetup: () => { },
-              onAction: () => { },
-            },
-          ],
-        }
-      },
-
-    fonts: {
-    //|||||||||||||||||||||||||||
-      showDefaultFonts: true,
-      //|||||||||||||||||||||||||||
-      customFonts: [
-        {
-          label: "Barlow",
-          value: '"Barlow", sans-serif',
-        },
-        {
-          label: "Khand",
-          value: '"Khand", sans-serif',
-        },
-        {
-          label: "Fira Code",
-          value: '"Fira Code", monospace',
-        },
-        {
-          label: "General Sans",
-          value: '"General Sans", sans-serif',
-        },
-        {
-          label: "Supreme",
-          value: '"Supreme", sans-serif',
-        },
-        {
-          label: "Pacifico",
-          value: '"Pacifico", cursive',
-        },
-      ],
-    },
-    mergeTags: {
-      first_name: {
-        name: 'First Name',
-        value: '{{first_name}}',
-        sample: 'John',
-      },
-      last_name: {
-        name: 'Last Name',
-        value: '{{last_name}}',
-        sample: 'Doe',
+const options = computed(() => ({
+  projectId: import.meta.env.VITE_UNLAYER_PROJECT_ID, // Using your project ID
+  locale: 'en',
+  version: "latest",
+  displayMode: displayMode.value,
+  appearance: {
+    name: 'REVREBEL',
+    theme: "modern_light",
+    isClassic: false,
+    panels: {
+      tools: {
+        dock: 'right',
       },
     },
-  };
+    loader: {
+      url: 'https://res.cloudinary.com/revrebel/image/upload/v1758990562/RR/Favicon/revrebel_256_fgsrow.ico',
+    },
+  },
+  features: {
+    headersAndFooters: true,
+    pageAnchors: true,
+    blocks: true,
+    colorPicker: {
+      presets: Object.values(brandColors),
+    },
+    textEditor: {
+      spellChecker: true,
+      tables: true,
+      inlineFontControls: true,
+    },
+  },
+  fonts: {
+    showDefaultFonts: false,
+    customFonts: [
+      {
+        label: "Brand Primary",
+        value: brandFonts.primary,
+      },
+      {
+        label: "Brand Secondary",
+        value: brandFonts.secondary,
+      },
+    ],
+  },
+}));
 
-  // called when the editor is created
-  const editorLoaded = () => {
-    // The 'load' event is good for knowing the editor instance is created,
-    // but 'ready' is better for loading a design.
-    console.log('Editor instance has been created.');
-  };
+const setDisplayMode = (mode: string) => {
+  displayMode.value = mode;
+};
 
-  // called when the editor has finished loading and is ready to be used
+const editorLoaded = () => {
+  // ...
+};
+
   const editorReady = async () => {
     console.log("Editor is ready.");
 
-    const latestDesign = await getLatestDesign();
-    if (latestDesign) {
-      emailEditor.value?.loadDesign(latestDesign);
-      console.log('Loaded latest design from server.');
-    } else {
-      console.log('No saved design found on server, loading a blank design with custom background.');
+    try {
+      const response = await api.get('/templates/latest');
+      const latestDesign = response.data.design;
+      if (latestDesign) {
+        emailEditor.value?.loadDesign(latestDesign);
+        console.log('Loaded latest design from server.');
+      } else {
+        console.log('No saved design found on server, loading a blank design with custom background.');
+        emailEditor.value?.loadDesign(sample);
+      }
+    } catch (error) {
+      console.error('Error loading latest design:', error);
       emailEditor.value?.loadDesign(sample);
     }
   };
@@ -195,7 +122,7 @@ import type {
       console.log("saveDesign JSON:", designObject);
 
       try {
-        await saveDesignApi(designObject);
+        await api.post('/templates', { design: designObject, name: 'New Template' });
         alert('Design saved successfully!');
       } catch (error) {
         console.error('Error saving design:', error);
