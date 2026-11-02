@@ -1,2 +1,4 @@
-onlyBuiltDependencies:
-  - esbuild
+allowBuilds:
+  '@prisma/client': true
+  all: true
+  esbuild: true
